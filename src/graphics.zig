@@ -1,4 +1,6 @@
 const std = @import("std");
+const entities = @import("entities.zig");
+const Hitbox = entities.Hitbox;
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("SDL2/SDL_ttf.h");
@@ -26,19 +28,6 @@ pub const Color = enum(u32) {
             .a = a,
         };
     }
-};
-
-pub const Player = struct {
-    x: f32,
-    y: f32,
-    dx: f32,
-    dy: f32,
-};
-pub const Bullet = struct {
-    x: f32,
-    y: f32,
-    dx: f32,
-    dy: f32,
 };
 
 pub const ScreenText = struct {
@@ -173,4 +162,20 @@ fn abs(num: f32) f32 {
         true => return num,
         false => return (num * -1),
     }
+}
+
+fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
+    _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
+}
+pub fn render_hitbox(renderer: *c.SDL_Renderer, hb: Hitbox) void {
+    // TODO:
+    // - render hitbox as rect(-outline????)
+    const rect = c.SDL_Rect{
+        .x = @intFromFloat(hb.x),
+        .y = @intFromFloat(hb.y),
+        .w = @intFromFloat(hb.w),
+        .h = @intFromFloat(hb.h),
+    };
+    set_render_color(renderer, Color.make_sdl_color(Color.purple));
+    _ = c.SDL_RenderDrawRect(renderer, &rect);
 }
