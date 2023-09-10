@@ -157,19 +157,10 @@ pub const Window = struct {
     }
 };
 
-fn abs(num: f32) f32 {
-    switch (num > 0) {
-        true => return num,
-        false => return (num * -1),
-    }
-}
-
 fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
 pub fn render_hitbox(renderer: *c.SDL_Renderer, hb: Hitbox) void {
-    // TODO:
-    // - render hitbox as rect(-outline????)
     const rect = c.SDL_Rect{
         .x = @intFromFloat(hb.x),
         .y = @intFromFloat(hb.y),
