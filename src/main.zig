@@ -10,6 +10,7 @@ const Visibility = entities.Visibility;
 const StandardEnemy = entities.StandardEnemy;
 const handle_player_event = @import("input.zig").handle_player_event;
 const overlaps = c.SDL_HasIntersection;
+const allocator = std.heap.page_allocator;
 
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
@@ -54,6 +55,7 @@ fn collides(e1: Hitbox, e2: Hitbox) bool {
 
 var quit = false;
 var pause = false;
+var enemies_killed: u32 = 0;
 pub fn main() !void {
     var window: Window = try Window.init("ShooterGame", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     defer window.deinit();
@@ -61,6 +63,7 @@ pub fn main() !void {
     var player: Player = Player.init(300, 300, 20);
     var bullets = create_bullets();
     var temp_enemy: StandardEnemy = StandardEnemy.init(WINDOW_WIDTH / 3, WINDOW_HEIGHT / 3);
+    var enemies_killed_msg: graphics.ScreenText = try graphics.ScreenText.init(40, 40, 24, Color.white, "Enemies Killed: 0", window.renderer);
     while (!quit) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) {
@@ -120,12 +123,20 @@ pub fn main() !void {
                 Visibility.Visible => {
                     if (collides(bullets[i].hb, temp_enemy.hb)) {
                         temp_enemy.hit(1);
+                        if (temp_enemy.destroy()) {
+                            enemies_killed += 1;
+                        }
                         bullets[i].reset();
                     }
                 },
                 Visibility.Invisible => {},
             }
         }
+
+        var tmp_string = try std.fmt.allocPrint(allocator, "enemies killed: {d}", .{enemies_killed});
+        defer allocator.free(tmp_string);
+
+        try enemies_killed_msg.render(window.renderer, tmp_string);
 
         c.SDL_RenderPresent(window.renderer);
         c.SDL_Delay(1000 / FPS);

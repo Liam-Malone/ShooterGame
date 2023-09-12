@@ -98,16 +98,20 @@ pub const StandardEnemy = struct {
     }
 
     pub fn hit(self: *StandardEnemy, dmg: u8) void {
-        if (self.hitpoints - dmg <= 0) {
-            self.destroy();
-        }
         self.hitpoints -= dmg;
     }
 
-    pub fn destroy(self: *StandardEnemy) void {
-        self.dx = 0;
-        self.dy = 0;
-        self.hb_visibility = Visibility.Invisible;
+    pub fn destroy(self: *StandardEnemy) bool {
+        if (self.hitpoints <= 0) {
+            self.x = 50;
+            self.y = 80;
+            self.dx = -1;
+            self.dy = -1;
+            self.hitpoints = 10;
+            //self.hb_visibility = Visibility.Invisible;
+            return true;
+        }
+        return false;
     }
 };
 
