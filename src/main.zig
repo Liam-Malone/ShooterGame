@@ -7,7 +7,9 @@ const Player = entities.Player;
 const Bullet = entities.Bullet;
 const Hitbox = entities.Hitbox;
 const Visibility = entities.Visibility;
+const StandardEnemy = entities.StandardEnemy;
 const handle_player_event = @import("input.zig").handle_player_event;
+const overlaps = c.SDL_HasIntersection;
 
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
@@ -41,6 +43,15 @@ fn is_offscreen(x: f32, y: f32) bool {
     return false;
 }
 
+fn collides(e1: Hitbox, e2: Hitbox) bool {
+    const e1_rect = graphics.make_sdl_rect(e1.x, e1.y, e1.w, e1.h);
+    const e2_rect = graphics.make_sdl_rect(e2.x, e2.y, e2.w, e2.h);
+    if (overlaps(&e1_rect, &e2_rect) != 0) {
+        return true;
+    }
+    return false;
+}
+
 var quit = false;
 var pause = false;
 pub fn main() !void {
@@ -49,6 +60,7 @@ pub fn main() !void {
 
     var player: Player = Player.init(300, 300, 20);
     var bullets = create_bullets();
+    var temp_enemy: StandardEnemy = StandardEnemy.init(WINDOW_WIDTH / 3, WINDOW_HEIGHT / 3);
     while (!quit) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) {
@@ -80,6 +92,19 @@ pub fn main() !void {
             },
             Visibility.Invisible => {},
         }
+
+        temp_enemy.update();
+        if (is_offscreen(temp_enemy.x, temp_enemy.y)) {
+            temp_enemy.dx *= -1;
+            temp_enemy.dy *= -1;
+        }
+        switch (temp_enemy.hb_visibility) {
+            Visibility.Visible => {
+                graphics.render_hitbox(window.renderer, temp_enemy.hb);
+            },
+            Visibility.Invisible => {},
+        }
+
         for (bullets, 0..) |_, i| {
             bullets[i].update();
             switch (bullets[i].hb_visibility) {
@@ -90,6 +115,15 @@ pub fn main() !void {
             }
             if (is_offscreen(bullets[i].x, bullets[i].y)) {
                 bullets[i].reset();
+            }
+            switch (temp_enemy.hb_visibility) {
+                Visibility.Visible => {
+                    if (collides(bullets[i].hb, temp_enemy.hb)) {
+                        temp_enemy.hit(1);
+                        bullets[i].reset();
+                    }
+                },
+                Visibility.Invisible => {},
             }
         }
 

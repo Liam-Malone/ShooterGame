@@ -1,4 +1,5 @@
 const std = @import("std");
+const graphics = @import("graphics.zig");
 
 pub const Visibility = enum {
     Visible,
@@ -10,6 +11,7 @@ pub const Hitbox = struct {
     y: f32,
     w: f32,
     h: f32,
+    color: graphics.Color,
 };
 
 pub const Player = struct {
@@ -32,6 +34,7 @@ pub const Player = struct {
                 .y = y,
                 .w = 20,
                 .h = 60,
+                .color = graphics.Color.purple,
             },
         };
     }
@@ -43,6 +46,7 @@ pub const Player = struct {
             .y = self.y,
             .w = 20,
             .h = 60,
+            .color = graphics.Color.purple,
         };
     }
     pub fn toggle_hitbox_vis(self: *Player) void {
@@ -56,6 +60,57 @@ pub const Player = struct {
         }
     }
 };
+
+pub const StandardEnemy = struct {
+    x: f32,
+    y: f32,
+    dx: f32 = 2,
+    dy: f32 = 1,
+    speed: f32 = 1,
+    hitpoints: u8 = 10,
+    hb: Hitbox,
+    hb_visibility: Visibility = Visibility.Visible,
+
+    pub fn init(x: f32, y: f32) StandardEnemy {
+        return StandardEnemy{
+            .x = x,
+            .y = y,
+            .hb = Hitbox{
+                .x = x,
+                .y = y,
+                .w = 10,
+                .h = 30,
+                .color = graphics.Color.red,
+            },
+        };
+    }
+
+    pub fn update(self: *StandardEnemy) void {
+        self.x += self.dx;
+        self.y += self.dy;
+        self.hb = Hitbox{
+            .x = self.x,
+            .y = self.y,
+            .w = 10,
+            .h = 30,
+            .color = graphics.Color.red,
+        };
+    }
+
+    pub fn hit(self: *StandardEnemy, dmg: u8) void {
+        if (self.hitpoints - dmg <= 0) {
+            self.destroy();
+        }
+        self.hitpoints -= dmg;
+    }
+
+    pub fn destroy(self: *StandardEnemy) void {
+        self.dx = 0;
+        self.dy = 0;
+        self.hb_visibility = Visibility.Invisible;
+    }
+};
+
 pub const Bullet = struct {
     id: u8,
     speed: f32 = 10,
@@ -80,6 +135,7 @@ pub const Bullet = struct {
                 .y = 0,
                 .w = 5,
                 .h = 5,
+                .color = graphics.Color.white,
             },
         };
     }
@@ -91,6 +147,7 @@ pub const Bullet = struct {
             .y = self.y,
             .w = 5,
             .h = 5,
+            .color = graphics.Color.white,
         };
     }
     pub fn fire(self: *Bullet, x: f32, y: f32, targ_x: f32, targ_y: f32) void {
@@ -102,6 +159,7 @@ pub const Bullet = struct {
             .y = self.y,
             .w = 5,
             .h = 5,
+            .color = graphics.Color.white,
         };
         //todo:
         //  - set bullet dx and dy to give direction, not speed
@@ -120,6 +178,7 @@ pub const Bullet = struct {
             .y = self.y,
             .w = 5,
             .h = 5,
+            .color = graphics.Color.white,
         };
     }
     pub fn reset(self: *Bullet) void {
@@ -134,6 +193,7 @@ pub const Bullet = struct {
             .y = self.y,
             .w = 5,
             .h = 5,
+            .color = graphics.Color.white,
         };
     }
 };

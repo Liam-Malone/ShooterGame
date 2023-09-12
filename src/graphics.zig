@@ -167,6 +167,15 @@ pub fn render_hitbox(renderer: *c.SDL_Renderer, hb: Hitbox) void {
         .w = @intFromFloat(hb.w),
         .h = @intFromFloat(hb.h),
     };
-    set_render_color(renderer, Color.make_sdl_color(Color.purple));
+    set_render_color(renderer, Color.make_sdl_color(hb.color));
     _ = c.SDL_RenderDrawRect(renderer, &rect);
+}
+
+pub fn make_sdl_rect(x: f32, y: f32, w: f32, h: f32) c.SDL_Rect {
+    return c.SDL_Rect{
+        .x = @intFromFloat(x),
+        .y = @intFromFloat(y),
+        .w = @intFromFloat(w),
+        .h = @intFromFloat(h),
+    };
 }
