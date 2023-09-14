@@ -1,5 +1,7 @@
 const std = @import("std");
 const graphics = @import("graphics.zig");
+const math = @import("math.zig");
+const Vec2 = math.Vec2;
 
 pub const Visibility = enum {
     Visible,
@@ -105,8 +107,8 @@ pub const StandardEnemy = struct {
         if (self.hitpoints <= 0) {
             self.x = 50;
             self.y = 80;
-            self.dx = -1;
-            self.dy = -1;
+            self.dx *= -1;
+            self.dy *= -1;
             self.hitpoints = 10;
             //self.hb_visibility = Visibility.Invisible;
             return true;
@@ -220,38 +222,4 @@ fn normalize_speed(speed: f32, x: f32, y: f32) Vec2 {
         .x = newx,
         .y = newy,
     };
-}
-const Vec2 = struct {
-    x: f32,
-    y: f32,
-    mag: f32,
-
-    fn mag(x: f32, y: f32) f32 {
-        return std.math.sqrt(x * x + y * y);
-    }
-
-    fn normalize(self: *Vec2) void {
-        self.x /= self.mag;
-        self.y /= self.mag;
-    }
-
-    pub fn adjust(self: *Vec2, speed: f32) void {
-        if (self.mag != speed and self.mag != (speed * -1)) {
-            self.normalize();
-            self.scale(speed);
-        }
-    }
-
-    pub fn scale(self: *Vec2, scalar: f32) void {
-        self.x *= scalar;
-        self.y *= scalar;
-        self.mag = mag(self.x, self.y);
-    }
-};
-
-fn abs(num: f32) f32 {
-    switch (num > 0) {
-        true => return num,
-        false => return (num * -1),
-    }
 }

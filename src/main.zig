@@ -108,7 +108,7 @@ pub fn main() !void {
             Visibility.Invisible => {},
         }
 
-        for (bullets, 0..) |_, i| {
+        for (0..bullets.len) |i| {
             bullets[i].update();
             switch (bullets[i].hb_visibility) {
                 Visibility.Visible => {
