@@ -1,6 +1,9 @@
 const std = @import("std");
 const graphics = @import("graphics.zig");
+const audio = @import("audio.zig");
 const math = @import("math.zig");
+
+const SoundEffect = audio.SoundEffect;
 const Vec2 = math.Vec2;
 
 pub const Visibility = enum {
@@ -24,13 +27,15 @@ pub const Player = struct {
     move_speed: f32 = 1,
     hitpoints: u8 = 10,
     hb: Hitbox,
+    footsteps: SoundEffect,
     hb_visibility: Visibility = Visibility.Visible,
 
-    pub fn init(x: f32, y: f32, hp: u8) Player {
+    pub fn init(x: f32, y: f32, hp: u8, footsteps: SoundEffect) Player {
         return Player{
             .x = x,
             .y = y,
             .hitpoints = hp,
+            .footsteps = footsteps,
             .hb = Hitbox{
                 .x = x,
                 .y = y,
@@ -43,6 +48,7 @@ pub const Player = struct {
     pub fn update(self: *Player) void {
         self.x += self.dx;
         self.y += self.dy;
+        if (self.dx != 0 or self.dy != 0) self.footsteps.play();
         self.hb = Hitbox{
             .x = self.x,
             .y = self.y,
@@ -119,6 +125,7 @@ pub const StandardEnemy = struct {
 
 pub const Bullet = struct {
     id: u8,
+    sound: SoundEffect,
     speed: f32 = 10,
     x: f32 = 0,
     y: f32 = 0,
@@ -133,9 +140,10 @@ pub const Bullet = struct {
         .mag = 0,
     },
 
-    pub fn init(id: u8) Bullet {
+    pub fn init(id: u8, gunshot: SoundEffect) Bullet {
         return Bullet{
             .id = id,
+            .sound = gunshot,
             .hb = Hitbox{
                 .x = 0,
                 .y = 0,
@@ -157,6 +165,7 @@ pub const Bullet = struct {
         };
     }
     pub fn fire(self: *Bullet, x: f32, y: f32, targ_x: f32, targ_y: f32) void {
+        self.sound.play();
         self.fired = true;
         self.x = x;
         self.y = y;

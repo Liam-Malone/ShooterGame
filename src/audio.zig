@@ -15,12 +15,14 @@ pub fn close_audio() void {
 pub const SoundEffect = struct {
     effect: ?*c.Mix_Chunk,
     timestamp: i64,
+    is_footstep: bool = false,
 
-    pub fn init(path: []const u8) SoundEffect {
+    pub fn init(path: []const u8, is_footstep: bool) SoundEffect {
         std.debug.print("\ntrying path: {s}\n", .{path});
         return SoundEffect{
             .effect = load(@ptrCast(path)),
             .timestamp = std.time.milliTimestamp(),
+            .is_footstep = is_footstep,
         };
     }
     pub fn deinit(self: *SoundEffect) void {
@@ -34,12 +36,19 @@ pub const SoundEffect = struct {
     }
 
     pub fn play(self: *SoundEffect) void {
-        const new_time = std.time.milliTimestamp();
-        if (new_time - 800 >= self.timestamp) {
-            self.timestamp = new_time;
+        switch (self.is_footstep) {
+            true => {
+                const new_time = std.time.milliTimestamp();
+                if (new_time - 800 >= self.timestamp) {
+                    self.timestamp = new_time;
 
-            std.debug.print("\n\n    playing sound effect:\n{any}    \n\n", .{self.effect});
-            _ = c.Mix_PlayChannel(-1, self.effect, 0);
+                    std.debug.print("\n\n    playing sound effect:\n{any}    \n\n", .{self.effect});
+                    _ = c.Mix_PlayChannel(-1, self.effect, 0);
+                }
+            },
+            false => {
+                _ = c.Mix_PlayChannel(-1, self.effect, 0);
+            },
         }
     }
 };

@@ -8,28 +8,23 @@ const c = @cImport({
     @cInclude("SDL2/SDL_ttf.h");
 });
 
-pub fn handle_player_event(event: c.SDL_Event, player: *Player, bullets: *[10]Bullet, footstep: *SoundEffect) void {
+pub fn handle_player_event(event: c.SDL_Event, player: *Player, bullets: *[10]Bullet) void {
     switch (event.type) {
         c.SDL_KEYDOWN => switch (event.key.keysym.sym) {
             'w' => {
                 player.dy = player.move_speed * -1;
-                footstep.play();
             },
             'a' => {
                 player.dx = player.move_speed * -1;
-                footstep.play();
             },
             's' => {
                 player.dy = player.move_speed;
-                footstep.play();
             },
             'd' => {
                 player.dx = player.move_speed;
-                footstep.play();
             },
             'h' => {
                 player.toggle_hitbox_vis();
-                footstep.play();
             },
             else => {},
         },
@@ -59,11 +54,13 @@ pub fn handle_player_event(event: c.SDL_Event, player: *Player, bullets: *[10]Bu
         c.SDL_MOUSEBUTTONDOWN => switch (event.button.button) {
             c.SDL_BUTTON_LEFT => {
                 // implement time delay
+                const startx = player.x + (player.hb.w / 2);
+                const starty = player.y + (player.hb.h / 4);
                 for (bullets, 0..) |_, i| {
                     if (!bullets[i].fired) {
-                        const dx = (@as(f32, @floatFromInt(event.button.x)) - player.x) / 10;
-                        const dy = (@as(f32, @floatFromInt(event.button.y)) - player.y) / 10;
-                        bullets[i].fire(player.x, player.y, dx, dy);
+                        const dx = (@as(f32, @floatFromInt(event.button.x)) - startx) / 10;
+                        const dy = (@as(f32, @floatFromInt(event.button.y)) - starty) / 10;
+                        bullets[i].fire(startx, starty, dx, dy);
                         std.debug.print("firing\n", .{});
                         return;
                     }

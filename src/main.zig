@@ -34,10 +34,10 @@ fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
 
-fn create_bullets() [BULLET_COUNT]Bullet {
+fn create_bullets(gs: SoundEffect) [BULLET_COUNT]Bullet {
     var bullets: [BULLET_COUNT]Bullet = undefined;
     for (0..BULLET_COUNT) |index| {
-        bullets[index] = Bullet.init(BULLET_COUNT);
+        bullets[index] = Bullet.init(BULLET_COUNT, gs);
     }
     return bullets;
 }
@@ -67,21 +67,24 @@ pub fn main() !void {
     var window: Window = try Window.init("ShooterGame", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     defer window.deinit();
 
-    audio.open_audio(44100, 2, 2048);
-    defer audio.close_audio();
-
-    audio.open_audio(44100, 2, 2048);
+    audio.open_audio(44100, 8, 2048);
     defer audio.close_audio();
 
     var music: Music = Music.init("sounds/music/8_Bit_Nostalgia.mp3");
     defer music.deinit();
 
-    var grass_step: SoundEffect = SoundEffect.init("sounds/effects/grass_step.wav");
+    // BEGIN sound effects
+    var grass_step: SoundEffect = SoundEffect.init("sounds/effects/grass_step.wav", true);
     defer grass_step.deinit();
 
-    var player: Player = Player.init(300, 300, 20);
+    var gunshot: SoundEffect = SoundEffect.init("sounds/effects/gunshot.wav", false);
+    defer gunshot.deinit();
 
-    var bullets = create_bullets();
+    // END sound effects
+
+    var player: Player = Player.init(300, 300, 20, grass_step);
+
+    var bullets = create_bullets(gunshot);
 
     var temp_enemy: StandardEnemy = StandardEnemy.init(WINDOW_WIDTH / 3, WINDOW_HEIGHT / 3);
     var enemies_killed_msg: graphics.ScreenText = try graphics.ScreenText.init(40, 40, 24, Color.white, "Enemies Killed: 0", window.renderer);
@@ -89,7 +92,7 @@ pub fn main() !void {
     while (!quit) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) {
-            handle_player_event(event, &player, &bullets, &grass_step);
+            handle_player_event(event, &player, &bullets);
             switch (event.type) {
                 c.SDL_QUIT => {
                     quit = true;
