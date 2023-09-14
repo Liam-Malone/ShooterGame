@@ -1,5 +1,6 @@
 const std = @import("std");
 const entities = @import("entities.zig");
+const SoundEffect = @import("audio.zig").SoundEffect;
 const Player = entities.Player;
 const Bullet = entities.Bullet;
 const c = @cImport({
@@ -7,23 +8,28 @@ const c = @cImport({
     @cInclude("SDL2/SDL_ttf.h");
 });
 
-pub fn handle_player_event(event: c.SDL_Event, player: *Player, bullets: *[10]Bullet) void {
+pub fn handle_player_event(event: c.SDL_Event, player: *Player, bullets: *[10]Bullet, footstep: *SoundEffect) void {
     switch (event.type) {
         c.SDL_KEYDOWN => switch (event.key.keysym.sym) {
             'w' => {
                 player.dy = player.move_speed * -1;
+                footstep.play();
             },
             'a' => {
                 player.dx = player.move_speed * -1;
+                footstep.play();
             },
             's' => {
                 player.dy = player.move_speed;
+                footstep.play();
             },
             'd' => {
                 player.dx = player.move_speed;
+                footstep.play();
             },
             'h' => {
                 player.toggle_hitbox_vis();
+                footstep.play();
             },
             else => {},
         },

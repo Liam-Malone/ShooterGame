@@ -1,13 +1,20 @@
 const std = @import("std");
 const graphics = @import("graphics.zig");
 const entities = @import("entities.zig");
+const audio = @import("audio.zig");
+
 const Window = graphics.Window;
 const Color = graphics.Color;
+
+const Music = audio.Music;
+const SoundEffect = audio.SoundEffect;
+
 const Player = entities.Player;
 const Bullet = entities.Bullet;
 const Hitbox = entities.Hitbox;
 const Visibility = entities.Visibility;
 const StandardEnemy = entities.StandardEnemy;
+
 const handle_player_event = @import("input.zig").handle_player_event;
 const overlaps = c.SDL_HasIntersection;
 const allocator = std.heap.page_allocator;
@@ -60,14 +67,29 @@ pub fn main() !void {
     var window: Window = try Window.init("ShooterGame", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     defer window.deinit();
 
+    audio.open_audio(44100, 2, 2048);
+    defer audio.close_audio();
+
+    audio.open_audio(44100, 2, 2048);
+    defer audio.close_audio();
+
+    var music: Music = Music.init("sounds/music/8_Bit_Nostalgia.mp3");
+    defer music.deinit();
+
+    var grass_step: SoundEffect = SoundEffect.init("sounds/effects/grass_step.wav");
+    defer grass_step.deinit();
+
     var player: Player = Player.init(300, 300, 20);
+
     var bullets = create_bullets();
+
     var temp_enemy: StandardEnemy = StandardEnemy.init(WINDOW_WIDTH / 3, WINDOW_HEIGHT / 3);
     var enemies_killed_msg: graphics.ScreenText = try graphics.ScreenText.init(40, 40, 24, Color.white, "Enemies Killed: 0", window.renderer);
+
     while (!quit) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) {
-            handle_player_event(event, &player, &bullets);
+            handle_player_event(event, &player, &bullets, &grass_step);
             switch (event.type) {
                 c.SDL_QUIT => {
                     quit = true;
@@ -78,6 +100,11 @@ pub fn main() !void {
                     },
                     ' ' => {
                         pause = !pause;
+                        if (music.playing) {
+                            music.toggle_pause();
+                        } else {
+                            music.play();
+                        }
                     },
                     else => {},
                 },
