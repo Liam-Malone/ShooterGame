@@ -70,14 +70,14 @@ pub fn main() !void {
     audio.open_audio(44100, 8, 2048);
     defer audio.close_audio();
 
-    var music: Music = Music.init("sounds/music/8_Bit_Nostalgia.mp3");
+    var music: Music = Music.init("assets/sounds/music/8_Bit_Nostalgia.mp3");
     defer music.deinit();
 
     // BEGIN sound effects
-    var grass_step: SoundEffect = SoundEffect.init("sounds/effects/grass_step.wav", true);
+    var grass_step: SoundEffect = SoundEffect.init("assets/sounds/effects/grass_step.wav", true);
     defer grass_step.deinit();
 
-    var gunshot: SoundEffect = SoundEffect.init("sounds/effects/gunshot.wav", false);
+    var gunshot: SoundEffect = SoundEffect.init("assets/sounds/effects/gunshot.wav", false);
     defer gunshot.deinit();
 
     // END sound effects

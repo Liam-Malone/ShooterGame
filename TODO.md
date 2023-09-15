@@ -12,6 +12,8 @@
     - [ ] clean up
 - [ ] add pause screen
 - [ ] add level generation
+    - map different 'surfaces' to colors - replace with proper textures later
+- [ ] get simple tests implemented
 - [ ] add point/inventory system
     - [x] move player sounds into player struct
     - [ ] give player hold over bullets
