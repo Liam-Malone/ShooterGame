@@ -1,21 +1,36 @@
 # TODO:
 
-- [ ] implement audio
+#### highest priority
+
+- [ ] implement concept of "camera"
+    - use with limited window first to ensure it works
+    - have some rect offscreen and try to move to it
+- [ ] add level generation
+    - map different 'tiles' to colors - replace with proper textures later
+    - [ ] improve level generation (maybe add underground??)
+
+#### standard priority
+
+- [x] implement basic audio
     - [x] music
     - [x] footsteps
     - [x] bullet fire 
-    - [ ] death
-    - [ ] bullet collision
-- [ ] add enemies
+
+- [ ] programmer art
+    - [x] player sprite
+    - [ ] more entity sprites
+    - [ ] bullet, torch sprites (play with lighting once torch is in)
+    - [ ] trees, grass, stone, path... textures
+- [ ] add other entities
     - [x] add basic enemy
     - [ ] improve basic enemy
-    - [ ] clean up
+    - [ ] add more kinds of enemy
+    - [ ] add friendly entities
 - [ ] add pause screen
-- [ ] add level generation
-    - map different 'surfaces' to colors - replace with proper textures later
-- [ ] get simple tests implemented
+
+#### delayed priority
+
+- [ ] maybe get simple unit tests implemented
 - [ ] add point/inventory system
-    - [x] move player sounds into player struct
     - [ ] give player hold over bullets
-- [ ] programmer art
-- [ ] save game and load from saves
+- [ ] save game and load from saves -- I'm dreading figuring this out
