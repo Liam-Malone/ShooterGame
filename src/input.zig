@@ -19,12 +19,14 @@ pub fn handle_player_event(window: *Window, event: c.SDL_Event, player: *Player,
             },
             'a' => {
                 player.dx = player.move_speed * -1;
+                player.sprite.flip();
             },
             's' => {
                 player.dy = player.move_speed;
             },
             'd' => {
                 player.dx = player.move_speed;
+                player.sprite.unflip();
             },
             'h' => {
                 player.toggle_hitbox_vis();

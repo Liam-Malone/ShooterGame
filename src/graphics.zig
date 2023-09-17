@@ -43,6 +43,7 @@ const DisplayMode = enum {
 
 pub const Sprite = struct {
     img_tex: ?*c.SDL_Texture,
+    flipped: bool = false,
 
     pub fn init(renderer: *c.SDL_Renderer, path: [*c]const u8) Sprite {
         const tex = c.IMG_LoadTexture(renderer, path);
@@ -54,6 +55,13 @@ pub const Sprite = struct {
     pub fn deinit(self: *Sprite) void {
         defer c.SDL_DestroyTexture(self.img_tex);
     }
+    pub fn flip(self: *Sprite) void {
+        self.flipped = true;
+    }
+    pub fn unflip(self: *Sprite) void {
+        self.flipped = false;
+    }
+
     pub fn render(self: *Sprite, renderer: *c.SDL_Renderer, rect: c.SDL_Rect) void {
         const render_rect = c.SDL_Rect{
             .x = rect.x - 10,
@@ -61,7 +69,10 @@ pub const Sprite = struct {
             .w = rect.w + 20,
             .h = rect.h + 20,
         };
-        _ = c.SDL_RenderCopy(renderer, self.img_tex, null, &render_rect);
+        //_ = c.SDL_RenderCopy(renderer, self.img_tex, null, &render_rect);
+        if (self.flipped) {
+            _ = c.SDL_RenderCopyEx(renderer, self.img_tex, null, &render_rect, 0, null, c.SDL_FLIP_HORIZONTAL);
+        } else _ = c.SDL_RenderCopyEx(renderer, self.img_tex, null, &render_rect, 0, null, c.SDL_FLIP_NONE);
     }
 };
 
