@@ -1,10 +1,14 @@
 const std = @import("std");
 const entities = @import("entities.zig");
+const math = @import("math.zig");
 const Hitbox = entities.Hitbox;
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("SDL2/SDL_ttf.h");
 });
+
+const print = std.debug.print;
+
 const FONT_FILE = @embedFile("DejaVuSans.ttf");
 const PIXEL_BUFFER = 1;
 
@@ -28,6 +32,12 @@ pub const Color = enum(u32) {
             .a = a,
         };
     }
+};
+
+const DisplayMode = enum {
+    windowed,
+    fullscreen_desktop,
+    fullscreen,
 };
 
 pub const ScreenText = struct {
@@ -138,6 +148,7 @@ pub const Window = struct {
     renderer: *c.SDL_Renderer,
     width: u32,
     height: u32,
+    mode: DisplayMode = DisplayMode.windowed,
 
     pub fn init(name: []const u8, xpos: u8, ypos: u8, width: u32, height: u32) !Window {
         if (c.SDL_Init(c.SDL_INIT_VIDEO) < 0) {
@@ -170,6 +181,52 @@ pub const Window = struct {
         defer c.TTF_Quit();
         defer c.SDL_DestroyWindow(@ptrCast(self.window));
         defer c.SDL_DestroyRenderer(self.renderer);
+    }
+
+    pub fn set_fullscreen(self: *Window, fullscreen_type: u32) void {
+        switch (fullscreen_type) {
+            0 => {
+                _ = c.SDL_SetWindowFullscreen(self.window, 0);
+                self.mode = DisplayMode.windowed;
+            },
+            1 => {
+                _ = c.SDL_SetWindowFullscreen(self.window, c.SDL_WINDOW_FULLSCREEN);
+                self.mode = DisplayMode.fullscreen;
+            },
+            2 => {
+                _ = c.SDL_SetWindowFullscreen(self.window, c.SDL_WINDOW_FULLSCREEN_DESKTOP);
+                self.mode = DisplayMode.fullscreen_desktop;
+            },
+            else => {},
+        }
+    }
+
+    pub fn toggle_fullscreen(self: *Window) void {
+        switch (self.mode) {
+            DisplayMode.fullscreen => {
+                self.set_fullscreen(0);
+                print("go windowed\n", .{});
+            },
+            DisplayMode.fullscreen_desktop => {
+                self.set_fullscreen(1);
+                print("go fullscreen\n", .{});
+            },
+            DisplayMode.windowed => {
+                self.set_fullscreen(2);
+                print("go full desktop\n", .{});
+            },
+        }
+    }
+
+    fn window_size(self: *Window) void {
+        var w: c_int = undefined;
+        var h: c_int = undefined;
+        _ = c.SDL_GetWindowSize(self.window, @ptrCast(&w), @ptrCast(&h));
+        self.width = @intCast(w);
+        self.height = @intCast(h);
+    }
+    pub fn update(self: *Window) void {
+        window_size(self);
     }
 };
 

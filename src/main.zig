@@ -24,8 +24,8 @@ const c = @cImport({
     @cInclude("SDL2/SDL_ttf.h");
 });
 
-const WINDOW_WIDTH = 800;
-const WINDOW_HEIGHT = 600;
+const START_WINDOW_WIDTH = 800;
+const START_WINDOW_HEIGHT = 600;
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
 const BULLET_COUNT = 10;
@@ -43,9 +43,9 @@ fn create_bullets(gs: SoundEffect) [BULLET_COUNT]Bullet {
 }
 
 fn is_offscreen(x: f32, y: f32) bool {
-    if (x < 0 or x > WINDOW_WIDTH) {
+    if (x < 0 or x > @as(f32, @floatFromInt(window_width))) {
         return true;
-    } else if (y < 0 or y > WINDOW_HEIGHT) {
+    } else if (y < 0 or y > @as(f32, @floatFromInt(window_height))) {
         return true;
     }
     return false;
@@ -60,11 +60,13 @@ fn collides(e1: Hitbox, e2: Hitbox) bool {
     return false;
 }
 
+var window_width: u32 = undefined;
+var window_height: u32 = undefined;
 var quit = false;
 var pause = false;
 var enemies_killed: u32 = 0;
 pub fn main() !void {
-    var window: Window = try Window.init("ShooterGame", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    var window: Window = try Window.init("ShooterGame", 0, 0, START_WINDOW_WIDTH, START_WINDOW_HEIGHT);
     defer window.deinit();
 
     audio.open_audio(44100, 8, 2048);
@@ -86,13 +88,13 @@ pub fn main() !void {
 
     var bullets = create_bullets(gunshot);
 
-    var temp_enemy: StandardEnemy = StandardEnemy.init(WINDOW_WIDTH / 3, WINDOW_HEIGHT / 3);
+    var temp_enemy: StandardEnemy = StandardEnemy.init(START_WINDOW_WIDTH / 3, START_WINDOW_HEIGHT / 3);
     var enemies_killed_msg: graphics.ScreenText = try graphics.ScreenText.init(40, 40, 24, Color.white, "Enemies Killed: 0", window.renderer);
 
     while (!quit) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) {
-            handle_player_event(event, &player, &bullets);
+            handle_player_event(&window, event, &player, &bullets);
             switch (event.type) {
                 c.SDL_QUIT => {
                     quit = true;
@@ -115,6 +117,9 @@ pub fn main() !void {
             }
         }
 
+        window.update();
+        window_width = window.width;
+        window_height = window.height;
         set_render_color(window.renderer, Color.make_sdl_color(BACKGROUND_COLOR));
         _ = c.SDL_RenderClear(window.renderer);
 

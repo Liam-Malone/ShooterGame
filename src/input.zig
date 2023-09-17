@@ -1,5 +1,7 @@
 const std = @import("std");
 const entities = @import("entities.zig");
+const graphics = @import("graphics.zig");
+const Window = graphics.Window;
 const SoundEffect = @import("audio.zig").SoundEffect;
 const Player = entities.Player;
 const Bullet = entities.Bullet;
@@ -8,7 +10,7 @@ const c = @cImport({
     @cInclude("SDL2/SDL_ttf.h");
 });
 
-pub fn handle_player_event(event: c.SDL_Event, player: *Player, bullets: *[10]Bullet) void {
+pub fn handle_player_event(window: *Window, event: c.SDL_Event, player: *Player, bullets: *[10]Bullet) void {
     switch (event.type) {
         c.SDL_KEYDOWN => switch (event.key.keysym.sym) {
             'w' => {
@@ -25,6 +27,9 @@ pub fn handle_player_event(event: c.SDL_Event, player: *Player, bullets: *[10]Bu
             },
             'h' => {
                 player.toggle_hitbox_vis();
+            },
+            'f' => {
+                window.toggle_fullscreen();
             },
             else => {},
         },
