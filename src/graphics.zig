@@ -5,6 +5,7 @@ const Hitbox = entities.Hitbox;
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("SDL2/SDL_ttf.h");
+    @cInclude("SDL2/SDL_image.h");
 });
 
 const print = std.debug.print;
@@ -38,6 +39,30 @@ const DisplayMode = enum {
     windowed,
     fullscreen_desktop,
     fullscreen,
+};
+
+pub const Sprite = struct {
+    img_tex: ?*c.SDL_Texture,
+
+    pub fn init(renderer: *c.SDL_Renderer, path: [*c]const u8) Sprite {
+        const tex = c.IMG_LoadTexture(renderer, path);
+
+        return Sprite{
+            .img_tex = tex,
+        };
+    }
+    pub fn deinit(self: *Sprite) void {
+        defer c.SDL_DestroyTexture(self.img_tex);
+    }
+    pub fn render(self: *Sprite, renderer: *c.SDL_Renderer, rect: c.SDL_Rect) void {
+        const render_rect = c.SDL_Rect{
+            .x = rect.x - 10,
+            .y = rect.y - 10,
+            .w = rect.w + 20,
+            .h = rect.h + 20,
+        };
+        _ = c.SDL_RenderCopy(renderer, self.img_tex, null, &render_rect);
+    }
 };
 
 pub const ScreenText = struct {

@@ -6,6 +6,9 @@ const math = @import("math.zig");
 const SoundEffect = audio.SoundEffect;
 const Vec2 = math.Vec2;
 
+const PLAYER_WIDTH = 20;
+const PLAYER_HEIGHT = 60;
+
 pub const Visibility = enum {
     Visible,
     Invisible,
@@ -20,6 +23,7 @@ pub const Hitbox = struct {
 };
 
 pub const Player = struct {
+    sprite: graphics.Sprite,
     x: f32,
     y: f32,
     dx: f32 = 0,
@@ -30,8 +34,9 @@ pub const Player = struct {
     footsteps: SoundEffect,
     hb_visibility: Visibility = Visibility.Visible,
 
-    pub fn init(x: f32, y: f32, hp: u8, footsteps: SoundEffect) Player {
+    pub fn init(sprite: graphics.Sprite, x: f32, y: f32, hp: u8, footsteps: SoundEffect) Player {
         return Player{
+            .sprite = sprite,
             .x = x,
             .y = y,
             .hitpoints = hp,
@@ -39,8 +44,8 @@ pub const Player = struct {
             .hb = Hitbox{
                 .x = x,
                 .y = y,
-                .w = 20,
-                .h = 60,
+                .w = PLAYER_WIDTH,
+                .h = PLAYER_HEIGHT,
                 .color = graphics.Color.purple,
             },
         };
@@ -79,13 +84,13 @@ pub const StandardEnemy = struct {
     hb: Hitbox,
     hb_visibility: Visibility = Visibility.Visible,
 
-    pub fn init(x: f32, y: f32) StandardEnemy {
+    pub fn init(x: u32, y: u32) StandardEnemy {
         return StandardEnemy{
-            .x = x,
-            .y = y,
+            .x = @floatFromInt(x),
+            .y = @floatFromInt(y),
             .hb = Hitbox{
-                .x = x,
-                .y = y,
+                .x = @floatFromInt(x),
+                .y = @floatFromInt(y),
                 .w = 10,
                 .h = 30,
                 .color = graphics.Color.red,
@@ -132,6 +137,7 @@ pub const Bullet = struct {
     dx: f32 = 0,
     dy: f32 = 0,
     fired: bool = false,
+    last_fired: i64 = 0,
     hb: Hitbox,
     hb_visibility: Visibility = Visibility.Invisible,
     vec: Vec2 = Vec2{
@@ -165,6 +171,11 @@ pub const Bullet = struct {
         };
     }
     pub fn fire(self: *Bullet, x: f32, y: f32, targ_x: f32, targ_y: f32) void {
+        const new_time = std.time.milliTimestamp();
+        if (new_time - 900 <= self.last_fired) {
+            return;
+        }
+        self.last_fired = new_time;
         self.sound.play();
         self.fired = true;
         self.x = x;

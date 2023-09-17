@@ -5,6 +5,7 @@ const audio = @import("audio.zig");
 
 const Window = graphics.Window;
 const Color = graphics.Color;
+const Sprite = graphics.Sprite;
 
 const Music = audio.Music;
 const SoundEffect = audio.SoundEffect;
@@ -22,16 +23,25 @@ const allocator = std.heap.page_allocator;
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("SDL2/SDL_ttf.h");
+    @cInclude("SDL2/SDL_image.h");
 });
 
-const START_WINDOW_WIDTH = 800;
-const START_WINDOW_HEIGHT = 600;
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
 const BULLET_COUNT = 10;
+const PLAYER_SPRITE_PATH = "assets/images/basic_player.png";
 
 fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
+}
+
+fn as_rect(hb: Hitbox) c.SDL_Rect {
+    return c.SDL_Rect{
+        .x = @as(c_int, @intFromFloat(hb.x)),
+        .y = @as(c_int, @intFromFloat(hb.y)),
+        .w = @as(c_int, @intFromFloat(hb.w)),
+        .h = @as(c_int, @intFromFloat(hb.h)),
+    };
 }
 
 fn create_bullets(gs: SoundEffect) [BULLET_COUNT]Bullet {
@@ -60,13 +70,13 @@ fn collides(e1: Hitbox, e2: Hitbox) bool {
     return false;
 }
 
-var window_width: u32 = undefined;
-var window_height: u32 = undefined;
+var window_width: u32 = 800;
+var window_height: u32 = 600;
 var quit = false;
 var pause = false;
 var enemies_killed: u32 = 0;
 pub fn main() !void {
-    var window: Window = try Window.init("ShooterGame", 0, 0, START_WINDOW_WIDTH, START_WINDOW_HEIGHT);
+    var window: Window = try Window.init("ShooterGame", 0, 0, window_width, window_height);
     defer window.deinit();
 
     audio.open_audio(44100, 8, 2048);
@@ -84,11 +94,13 @@ pub fn main() !void {
 
     // END sound effects
 
-    var player: Player = Player.init(300, 300, 20, grass_step);
+    var player_sprite = Sprite.init(window.renderer, PLAYER_SPRITE_PATH);
+    defer player_sprite.deinit();
+    var player: Player = Player.init(player_sprite, 300, 300, 20, grass_step);
 
     var bullets = create_bullets(gunshot);
 
-    var temp_enemy: StandardEnemy = StandardEnemy.init(START_WINDOW_WIDTH / 3, START_WINDOW_HEIGHT / 3);
+    var temp_enemy: StandardEnemy = StandardEnemy.init(window_width / 3, window_height / 3);
     var enemies_killed_msg: graphics.ScreenText = try graphics.ScreenText.init(40, 40, 24, Color.white, "Enemies Killed: 0", window.renderer);
 
     while (!quit) {
@@ -124,6 +136,7 @@ pub fn main() !void {
         _ = c.SDL_RenderClear(window.renderer);
 
         player.update();
+        player.sprite.render(window.renderer, as_rect(player.hb));
         switch (player.hb_visibility) {
             Visibility.Visible => {
                 graphics.render_hitbox(window.renderer, player.hb);

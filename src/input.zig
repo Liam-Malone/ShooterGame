@@ -8,6 +8,7 @@ const Bullet = entities.Bullet;
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("SDL2/SDL_ttf.h");
+    @cInclude("SDL2/SDL_image.h");
 });
 
 pub fn handle_player_event(window: *Window, event: c.SDL_Event, player: *Player, bullets: *[10]Bullet) void {
@@ -66,7 +67,6 @@ pub fn handle_player_event(window: *Window, event: c.SDL_Event, player: *Player,
                         const dx = (@as(f32, @floatFromInt(event.button.x)) - startx) / 10;
                         const dy = (@as(f32, @floatFromInt(event.button.y)) - starty) / 10;
                         bullets[i].fire(startx, starty, dx, dy);
-                        std.debug.print("firing\n", .{});
                         return;
                     }
                 }
