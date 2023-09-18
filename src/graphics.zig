@@ -138,22 +138,6 @@ pub const ScreenText = struct {
     }
 
     pub fn render(self: *ScreenText, renderer: *c.SDL_Renderer, msg: []const u8) !void {
-
-        // String creation with varying value example below:
-        //  - will probably use in main or elsewhere
-
-        //        var x: []u8 = try std.fmt.allocPrint(allocator, "P{d} Score: {d}", .{ player_num, player_score });
-        //        defer allocator.free(x);
-        //        self.surface = c.TTF_RenderUTF8_Solid(
-        //            self.font,
-        //            @ptrCast(x),
-        //            Color.make_sdl_color(self.color),
-        //        ) orelse {
-        //            c.SDL_Log("Unable to render text: %s", c.TTF_GetError());
-        //            return error.SDLInitializationFailed;
-        //        };
-        //
-
         self.surface = c.TTF_RenderUTF8_Solid(
             self.font,
             @ptrCast(msg),
