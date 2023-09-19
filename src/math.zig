@@ -28,7 +28,8 @@ pub const Vec2 = struct {
     }
 };
 
-pub fn abs(num: f32) f32 {
+// not needed !! use builtin @fabs()
+pub fn abs(num: i32) i32 {
     switch (num > 0) {
         true => return num,
         false => return (num * -1),
