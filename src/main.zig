@@ -4,6 +4,7 @@ const entities = @import("entities.zig");
 const audio = @import("audio.zig");
 
 const Window = graphics.Window;
+const Viewport = graphics.Viewport;
 const Color = graphics.Color;
 const Sprite = graphics.Sprite;
 
@@ -82,6 +83,8 @@ pub fn main() !void {
     audio.open_audio(44100, 8, 2048);
     defer audio.close_audio();
 
+    var viewport: Viewport = Viewport.init(0, 0, window_width, window_height);
+
     var music: Music = Music.init("assets/sounds/music/8_Bit_Nostalgia.mp3");
     defer music.deinit();
 
@@ -134,6 +137,8 @@ pub fn main() !void {
         window_height = window.height;
         set_render_color(window.renderer, Color.make_sdl_color(BACKGROUND_COLOR));
         _ = c.SDL_RenderClear(window.renderer);
+
+        viewport.update();
 
         player.update();
         player.sprite.render(window.renderer, as_rect(player.hb));

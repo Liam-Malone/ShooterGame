@@ -41,6 +41,41 @@ const DisplayMode = enum {
     fullscreen,
 };
 
+pub const Viewport = struct {
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+    rect: c.SDL_Rect,
+    dx: i32 = 0,
+    dy: i32 = 0,
+
+    pub fn init(x: i32, y: i32, width: i32, height: i32) Viewport {
+        return Viewport{
+            .x = x,
+            .y = y,
+            .w = width,
+            .h = height,
+            .rect = c.SDL_Rect{
+                .x = @as(c_int, x),
+                .y = @as(c_int, y),
+                .w = @as(c_int, width),
+                .h = @as(c_int, height),
+            },
+        };
+    }
+    pub fn update(self: *Viewport) void {
+        self.x += self.dx;
+        self.y += self.dy;
+        self.rect = c.SDL_Rect{
+            .x = @as(c_int, self.x),
+            .y = @as(c_int, self.y),
+            .w = @as(c_int, self.w),
+            .h = @as(c_int, self.h),
+        };
+    }
+};
+
 pub const Sprite = struct {
     img_tex: ?*c.SDL_Texture,
     flipped: bool = false,
@@ -62,17 +97,20 @@ pub const Sprite = struct {
         self.flipped = false;
     }
 
-    pub fn render(self: *Sprite, renderer: *c.SDL_Renderer, rect: c.SDL_Rect) void {
-        const render_rect = c.SDL_Rect{
-            .x = rect.x - 10,
-            .y = rect.y - 10,
-            .w = rect.w + 20,
-            .h = rect.h + 20,
-        };
-        //_ = c.SDL_RenderCopy(renderer, self.img_tex, null, &render_rect);
-        if (self.flipped) {
-            _ = c.SDL_RenderCopyEx(renderer, self.img_tex, null, &render_rect, 0, null, c.SDL_FLIP_HORIZONTAL);
-        } else _ = c.SDL_RenderCopyEx(renderer, self.img_tex, null, &render_rect, 0, null, c.SDL_FLIP_NONE);
+    pub fn render(self: *Sprite, renderer: *c.SDL_Renderer, rect: c.SDL_Rect, vp: Viewport) void {
+        // not final
+        if (rect.x + rect.w - vp.x > vp.x or rect.x - vp.x < vp.x + vp.w) {
+            const render_rect = c.SDL_Rect{
+                .x = (rect.x - vp.x),
+                .y = (rect.y - vp.y),
+                .w = rect.w + 20,
+                .h = rect.h + 20,
+            };
+            //_ = c.SDL_RenderCopy(renderer, self.img_tex, null, &render_rect);
+            if (self.flipped) {
+                _ = c.SDL_RenderCopyEx(renderer, self.img_tex, null, &render_rect, 0, null, c.SDL_FLIP_HORIZONTAL);
+            } else _ = c.SDL_RenderCopyEx(renderer, self.img_tex, null, &render_rect, 0, null, c.SDL_FLIP_NONE);
+        }
     }
 };
 
