@@ -64,7 +64,22 @@ pub const Viewport = struct {
             },
         };
     }
-    pub fn update(self: *Viewport) void {
+    pub fn update(self: *Viewport, destx: i32, desty: i32, max_x: i32, max_y: i32) void {
+        const xdiff = destx - @divExact(self.w, 2);
+        const ydiff = desty - @divExact(self.h, 2);
+
+        if (xdiff != self.x) {
+            //  fill out logic to (gradually) center destx
+            const diff: i32 = @divFloor(xdiff - self.x, 3);
+            self.dx = if (self.x + diff > 0 and self.x + self.w + diff < max_x) diff else 0;
+        }
+
+        if (ydiff != self.y) {
+            //  fill out logic to (gradually) center desty
+            const diff = @divFloor(ydiff - self.y, 3);
+            self.dy = if (self.y + diff > 0 and self.y + self.h + diff < max_y) diff else 0;
+        }
+
         self.x += self.dx;
         self.y += self.dy;
         self.rect = c.SDL_Rect{
@@ -73,6 +88,10 @@ pub const Viewport = struct {
             .w = @as(c_int, self.w),
             .h = @as(c_int, self.h),
         };
+    }
+    pub fn can_see(self: *Viewport, x: i32, y: i32, w: i32, h: i32) bool {
+        if ((x + w > self.x or x > self.x + self.w) and (y + h > self.y or y < self.y + self.h)) return true;
+        return false;
     }
 };
 
@@ -97,9 +116,10 @@ pub const Sprite = struct {
         self.flipped = false;
     }
 
-    pub fn render(self: *Sprite, renderer: *c.SDL_Renderer, rect: c.SDL_Rect, vp: Viewport) void {
+    pub fn render(self: *Sprite, renderer: *c.SDL_Renderer, rect: c.SDL_Rect, vp: *Viewport) void {
         // not final
-        if (rect.x + rect.w - vp.x > vp.x or rect.x - vp.x < vp.x + vp.w) {
+        //if (rect.x + rect.w - vp.x > vp.x or rect.x - vp.x < vp.x + vp.w) {
+        if (vp.can_see(rect.x, rect.y, rect.w, rect.h)) {
             const render_rect = c.SDL_Rect{
                 .x = (rect.x - vp.x),
                 .y = (rect.y - vp.y),
@@ -291,15 +311,17 @@ pub const Window = struct {
 fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
-pub fn render_hitbox(renderer: *c.SDL_Renderer, hb: Hitbox) void {
-    const rect = c.SDL_Rect{
-        .x = @intFromFloat(hb.x),
-        .y = @intFromFloat(hb.y),
-        .w = @intFromFloat(hb.w),
-        .h = @intFromFloat(hb.h),
-    };
-    set_render_color(renderer, Color.make_sdl_color(hb.color));
-    _ = c.SDL_RenderDrawRect(renderer, &rect);
+pub fn render_hitbox(renderer: *c.SDL_Renderer, hb: Hitbox, vp: *Viewport) void {
+    if (vp.can_see(@intFromFloat(hb.x), @intFromFloat(hb.y), @intFromFloat(hb.w), @intFromFloat(hb.h))) {
+        const rect = c.SDL_Rect{
+            .x = @as(i32, @intFromFloat(hb.x)) - vp.x,
+            .y = @as(i32, @intFromFloat(hb.y)) - vp.y,
+            .w = @as(i32, @intFromFloat(hb.w)),
+            .h = @as(i32, @intFromFloat(hb.h)),
+        };
+        set_render_color(renderer, Color.make_sdl_color(hb.color));
+        _ = c.SDL_RenderDrawRect(renderer, &rect);
+    }
 }
 
 pub fn make_sdl_rect(x: f32, y: f32, w: f32, h: f32) c.SDL_Rect {

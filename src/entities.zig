@@ -113,14 +113,17 @@ pub const StandardEnemy = struct {
     pub fn hit(self: *StandardEnemy, dmg: u8) void {
         self.hitpoints -= dmg;
     }
+    pub fn destroy(self: *StandardEnemy) void {
+        self.x = 50;
+        self.y = 80;
+        self.dx *= -1;
+        self.dy *= -1;
+        self.hitpoints = 10;
+    }
 
-    pub fn destroy(self: *StandardEnemy) bool {
+    pub fn destroyed(self: *StandardEnemy) bool {
         if (self.hitpoints <= 0) {
-            self.x = 50;
-            self.y = 80;
-            self.dx *= -1;
-            self.dy *= -1;
-            self.hitpoints = 10;
+            self.destroy();
             //self.hb_visibility = Visibility.Invisible;
             return true;
         }

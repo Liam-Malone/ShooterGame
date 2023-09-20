@@ -29,6 +29,8 @@ const c = @cImport({
 
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
+const WORLD_WIDTH = 1200;
+const WORLD_HEIGHT = 1200;
 const BULLET_COUNT = 10;
 const PLAYER_SPRITE_PATH = "assets/images/basic_player.png";
 
@@ -83,7 +85,7 @@ pub fn main() !void {
     audio.open_audio(44100, 8, 2048);
     defer audio.close_audio();
 
-    var viewport: Viewport = Viewport.init(0, 0, window_width, window_height);
+    var viewport: Viewport = Viewport.init(0, 0, @intCast(window_width), @intCast(window_height));
 
     var music: Music = Music.init("assets/sounds/music/8_Bit_Nostalgia.mp3");
     defer music.deinit();
@@ -138,25 +140,24 @@ pub fn main() !void {
         set_render_color(window.renderer, Color.make_sdl_color(BACKGROUND_COLOR));
         _ = c.SDL_RenderClear(window.renderer);
 
-        viewport.update();
+        viewport.update(@intFromFloat(player.x), @intFromFloat(player.y), WORLD_WIDTH, WORLD_HEIGHT);
 
         player.update();
-        player.sprite.render(window.renderer, as_rect(player.hb));
+        player.sprite.render(window.renderer, as_rect(player.hb), &viewport);
         switch (player.hb_visibility) {
             Visibility.Visible => {
-                graphics.render_hitbox(window.renderer, player.hb);
+                graphics.render_hitbox(window.renderer, player.hb, &viewport);
             },
             Visibility.Invisible => {},
         }
 
         temp_enemy.update();
-        if (is_offscreen(temp_enemy.x, temp_enemy.y)) {
-            temp_enemy.dx *= -1;
-            temp_enemy.dy *= -1;
+        if (temp_enemy.x > WORLD_WIDTH or temp_enemy.y > WORLD_HEIGHT) {
+            temp_enemy.destroy();
         }
         switch (temp_enemy.hb_visibility) {
             Visibility.Visible => {
-                graphics.render_hitbox(window.renderer, temp_enemy.hb);
+                graphics.render_hitbox(window.renderer, temp_enemy.hb, &viewport);
             },
             Visibility.Invisible => {},
         }
@@ -165,7 +166,7 @@ pub fn main() !void {
             bullets[i].update();
             switch (bullets[i].hb_visibility) {
                 Visibility.Visible => {
-                    graphics.render_hitbox(window.renderer, bullets[i].hb);
+                    graphics.render_hitbox(window.renderer, bullets[i].hb, &viewport);
                 },
                 Visibility.Invisible => {},
             }
@@ -176,7 +177,7 @@ pub fn main() !void {
                 Visibility.Visible => {
                     if (collides(bullets[i].hb, temp_enemy.hb)) {
                         temp_enemy.hit(1);
-                        if (temp_enemy.destroy()) {
+                        if (temp_enemy.destroyed()) {
                             enemies_killed += 1;
                         }
                         bullets[i].reset();
