@@ -1,6 +1,6 @@
 # Shooter Game
 
-I'm going to make a simple 2d shooter game
+I'm making a simple 2d shooter game
 
 there will be extreme feature creep in this project - and that's the point
 
