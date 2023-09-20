@@ -2,11 +2,9 @@
 
 #### highest priority
 
-- [ ] implement concept of "camera"
-    - use with limited window first to ensure it works
-    - have some rect offscreen and try to move to it
+- [x] implement concept of "camera"
     - move camera by keeping player centre of screen
-        - later adjust this so that screen moves when player reaches a certain distance from the centre
+    - [ ] later adjust this so that screen moves when player reaches a certain distance from the centre
 - [ ] add level generation
     - map different 'tiles' to colors - replace with proper textures later
     - [ ] improve level generation (maybe add underground??)
