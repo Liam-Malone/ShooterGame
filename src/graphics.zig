@@ -69,16 +69,14 @@ pub const Viewport = struct {
         const ydiff = desty - @divExact(self.h, 2);
 
         if (xdiff != self.x) {
-            //  fill out logic to (gradually) center destx
             const diff: i32 = @divFloor(xdiff - self.x, 3);
             self.dx = if (self.x + diff > 0 and self.x + self.w + diff < max_x) diff else 0;
-        }
+        } else self.dx = 0;
 
         if (ydiff != self.y) {
-            //  fill out logic to (gradually) center desty
             const diff = @divFloor(ydiff - self.y, 3);
             self.dy = if (self.y + diff > 0 and self.y + self.h + diff < max_y) diff else 0;
-        }
+        } else self.dy = 0;
 
         self.x += self.dx;
         self.y += self.dy;

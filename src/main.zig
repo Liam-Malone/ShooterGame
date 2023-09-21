@@ -111,7 +111,7 @@ pub fn main() !void {
     while (!quit) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) {
-            handle_player_event(&window, event, &player, &bullets);
+            handle_player_event(&window, viewport, event, &player, &bullets);
             switch (event.type) {
                 c.SDL_QUIT => {
                     quit = true;
@@ -170,7 +170,7 @@ pub fn main() !void {
                 },
                 Visibility.Invisible => {},
             }
-            if (is_offscreen(bullets[i].x, bullets[i].y)) {
+            if (!viewport.can_see(@intFromFloat(bullets[i].x), @intFromFloat(bullets[i].y), @intFromFloat(bullets[i].hb.w), @intFromFloat(bullets[i].hb.h))) {
                 bullets[i].reset();
             }
             switch (temp_enemy.hb_visibility) {

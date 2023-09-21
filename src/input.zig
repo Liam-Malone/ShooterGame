@@ -2,6 +2,7 @@ const std = @import("std");
 const entities = @import("entities.zig");
 const graphics = @import("graphics.zig");
 const Window = graphics.Window;
+const Viewport = graphics.Viewport;
 const SoundEffect = @import("audio.zig").SoundEffect;
 const Player = entities.Player;
 const Bullet = entities.Bullet;
@@ -11,7 +12,7 @@ const c = @cImport({
     @cInclude("SDL2/SDL_image.h");
 });
 
-pub fn handle_player_event(window: *Window, event: c.SDL_Event, player: *Player, bullets: *[10]Bullet) void {
+pub fn handle_player_event(window: *Window, vp: Viewport, event: c.SDL_Event, player: *Player, bullets: *[10]Bullet) void {
     switch (event.type) {
         c.SDL_KEYDOWN => switch (event.key.keysym.sym) {
             'w' => {
@@ -66,8 +67,8 @@ pub fn handle_player_event(window: *Window, event: c.SDL_Event, player: *Player,
                 const starty = player.y + (player.hb.h / 4);
                 for (bullets, 0..) |_, i| {
                     if (!bullets[i].fired) {
-                        const dx = (@as(f32, @floatFromInt(event.button.x)) - startx) / 10;
-                        const dy = (@as(f32, @floatFromInt(event.button.y)) - starty) / 10;
+                        const dx = (@as(f32, @floatFromInt(event.button.x - vp.x)) - startx) / 10;
+                        const dy = (@as(f32, @floatFromInt(event.button.y - vp.y)) - starty) / 10;
                         bullets[i].fire(startx, starty, dx, dy);
                         return;
                     }
