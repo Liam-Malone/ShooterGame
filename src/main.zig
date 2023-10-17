@@ -3,18 +3,17 @@ const graphics = @import("graphics.zig");
 const entities = @import("entities.zig");
 const audio = @import("audio.zig");
 
-const Window = graphics.Window;
+const Sprite = graphics.Sprite;
+const SoundEffect = audio.SoundEffect;
+const Music = audio.Music;
 const Viewport = graphics.Viewport;
 const Color = graphics.Color;
-const Sprite = graphics.Sprite;
-
-const Music = audio.Music;
-const SoundEffect = audio.SoundEffect;
-
-const Player = entities.Player;
+const Window = graphics.Window;
 const Bullet = entities.Bullet;
-const Hitbox = entities.Hitbox;
+const Player = entities.Player;
+
 const Visibility = entities.Visibility;
+const Hitbox = entities.Hitbox;
 const StandardEnemy = entities.StandardEnemy;
 
 const handle_player_event = @import("input.zig").handle_player_event;

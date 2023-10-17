@@ -66,9 +66,9 @@ pub fn handle_player_event(window: *Window, vp: Viewport, event: c.SDL_Event, pl
                 const startx = player.x + (player.hb.w / 2);
                 const starty = player.y + (player.hb.h / 4);
                 for (bullets, 0..) |_, i| {
-                    if (!bullets[i].fired) {
-                        const dx = (@as(f32, @floatFromInt(event.button.x - vp.x)) - startx) / 10;
-                        const dy = (@as(f32, @floatFromInt(event.button.y - vp.y)) - starty) / 10;
+                    if (!bullets[i].fired) { //                this +... took me far too long to realize was what I needed
+                        const dx = (@as(f32, @floatFromInt(event.button.x + vp.x)) - startx) / 10;
+                        const dy = (@as(f32, @floatFromInt(event.button.y + vp.y)) - starty) / 10;
                         bullets[i].fire(startx, starty, dx, dy);
                         return;
                     }
