@@ -20,11 +20,7 @@ const handle_player_event = @import("input.zig").handle_player_event;
 const overlaps = c.SDL_HasIntersection;
 const allocator = std.heap.page_allocator;
 
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_ttf.h");
-    @cInclude("SDL2/SDL_image.h");
-});
+const c = @import("c.zig");
 
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;

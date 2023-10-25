@@ -1,8 +1,5 @@
 const std = @import("std");
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_mixer.h");
-});
+const c = @import("c.zig");
 
 pub fn open_audio(sound_frequency: usize, channels: u8, sample_size: usize) void {
     if (c.Mix_OpenAudio(@intCast(sound_frequency), c.MIX_DEFAULT_FORMAT, @intCast(channels), @intCast(sample_size)) < 0) {

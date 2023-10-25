@@ -2,11 +2,7 @@ const std = @import("std");
 const entities = @import("entities.zig");
 const math = @import("math.zig");
 const Hitbox = entities.Hitbox;
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_ttf.h");
-    @cInclude("SDL2/SDL_image.h");
-});
+const c = @import("c.zig");
 
 const print = std.debug.print;
 
@@ -39,6 +35,75 @@ const DisplayMode = enum {
     windowed,
     fullscreen_desktop,
     fullscreen,
+};
+
+const Tile = enum(u32) {
+    grass = 0,
+    stone = 1,
+    dirt = 2,
+    wood = 3,
+    leaves = 4,
+};
+pub const Tilemap = struct {
+    tiles: [][]Tile,
+
+    //
+    pub fn init(filepath: []const u8, allocator: std.mem.Allocator) !Tilemap {
+        const tiles = load_from_file(filepath, allocator);
+        print("\n**DEBUG PRINTING TILEMAP**\n", .{});
+        try print_map(tiles);
+        return Tilemap{
+            .tiles = tiles,
+        };
+    }
+
+    //******************************************************//
+    //                   LOAD CUSTOM TILEMAP                //
+    //    ---------------------------------------------     //
+    //        tilemap file will be something like:          //
+    //                                                      //
+    //                0 1 0 0 0 0 0 0 1 0                   //
+    //                0 1 1 1 1 1 1 1 1 1                   //
+    //                0 0 0 0 0 1 1 0 0 0                   //
+    //                                                      //
+    //                                                      //
+    //    function should read in file line by line and     //
+    //    sort int values into the appropriate Tile enum    //
+    //    values, collecting into an arraylist, then to     //
+    //    an array of Tiles, which is to be added to the    //
+    //    arraylist, and subsequently, the array, of        //
+    //    Tile arrays, which will determine the map.        //
+    //******************************************************//
+
+    fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator) ![][]Tile {
+        // read in one line at a time, sort into map based on numerical value
+        var map_maker = std.ArrayList([]Tile).init(allocator);
+        defer map_maker.deinit();
+        const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 250);
+        defer allocator.free(data);
+        var iter_lines = std.mem.split(u8, data, "\n");
+        while (iter_lines.next()) |line| {
+            var tile_arr = std.ArrayList([]Tile).init(allocator);
+            defer tile_arr.deinit();
+            var iter_inner = std.mem.split(u8, line, ' ');
+            while (iter_inner.next()) |val| {
+                const int_val: u32 = std.fmt.parseInt(u32, val, 10) catch undefined;
+                if (int_val != undefined) try tile_arr.append(int_val);
+            }
+            const arr: []Tile = tile_arr.toOwnedSlice();
+            try map_maker.append(arr);
+        }
+    }
+
+    // debug purposes
+    fn print_map(map: [][]Tile) !void {
+        for (map) |arr| {
+            for (arr) |tile| {
+                print("{d} ", .{tile});
+            }
+            print("\n", .{});
+        }
+    }
 };
 
 pub const Viewport = struct {

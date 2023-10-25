@@ -6,11 +6,7 @@ const Viewport = graphics.Viewport;
 const SoundEffect = @import("audio.zig").SoundEffect;
 const Player = entities.Player;
 const Bullet = entities.Bullet;
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_ttf.h");
-    @cInclude("SDL2/SDL_image.h");
-});
+const c = @import("c.zig");
 
 pub fn handle_player_event(window: *Window, vp: Viewport, event: c.SDL_Event, player: *Player, bullets: *[10]Bullet) void {
     switch (event.type) {
