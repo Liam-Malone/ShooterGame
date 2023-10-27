@@ -8,12 +8,19 @@ const print = std.debug.print;
 
 const FONT_FILE = @embedFile("DejaVuSans.ttf");
 const PIXEL_BUFFER = 1;
+const TILE_WIDTH = 80;
+const TILE_HEIGHT = 80;
 
 pub const Color = enum(u32) {
     white = 0xFFFFFFFF,
     purple = 0x7BF967AA,
     red = 0xFC1A17CC,
     dark_gray = 0xFF181818,
+    grass = 0x00FF00FF,
+    dirt = 0xBBBBBBFF,
+    wood = 0xBBBBBBAA,
+    stone = 0xFF1818FF,
+    leaves = 0x00FF0088,
 
     pub fn make_sdl_color(col: Color) c.SDL_Color {
         var color = @intFromEnum(col);
@@ -37,20 +44,87 @@ const DisplayMode = enum {
     fullscreen,
 };
 
-const Tile = enum(u32) {
+const TileID = enum(u32) {
     grass = 0,
     stone = 1,
     dirt = 2,
     wood = 3,
     leaves = 4,
+
+    pub fn create(id: u32) !TileID {
+        switch (id) {
+            0 => {
+                return TileID.grass;
+            },
+            1 => {
+                return TileID.stone;
+            },
+            2 => {
+                return TileID.dirt;
+            },
+            3 => {
+                return TileID.wood;
+            },
+            4 => {
+                return TileID.leaves;
+            },
+            else => {
+                unreachable;
+            },
+        }
+    }
+};
+const Tile = struct {
+    w: f32 = TILE_WIDTH,
+    h: f32 = TILE_HEIGHT,
+    x: f32,
+    y: f32,
+    id: TileID,
+
+    pub fn init(id: u32, x: u32, y: u32) Tile {
+        return Tile{
+            .x = @as(f32, @floatFromInt(x)) * TILE_WIDTH,
+            .y = @as(f32, @floatFromInt(y)) * TILE_HEIGHT,
+            .id = try TileID.create(id),
+        };
+    }
+    pub fn get_color(self: *Tile) Color {
+        var col: Color = undefined;
+        switch (self.id) {
+            TileID.grass => {
+                col = Color.grass;
+            },
+            TileID.dirt => {
+                col = Color.dirt;
+            },
+            TileID.wood => {
+                col = Color.wood;
+            },
+            TileID.stone => {
+                col = Color.stone;
+            },
+            TileID.leaves => {
+                col = Color.leaves;
+            },
+        }
+        return col;
+    }
 };
 pub const Tilemap = struct {
     tiles: [][]Tile,
 
     //
     pub fn init(filepath: []const u8, allocator: std.mem.Allocator) !Tilemap {
-        const tiles = load_from_file(filepath, allocator);
-        print("\n**DEBUG PRINTING TILEMAP**\n", .{});
+        print("\ntrying path: {s}\n", .{filepath});
+        const tiles = try load_from_file(filepath, allocator);
+        var tile_count: usize = 0;
+        for (tiles) |row| {
+            for (row) |tile| {
+                _ = tile;
+                tile_count += 1;
+            }
+        }
+        print("\n**DEBUG PRINTING TILEMAP**\n\t(tile count: {d})\t\n", .{tile_count});
         try print_map(tiles);
         return Tilemap{
             .tiles = tiles,
@@ -82,16 +156,43 @@ pub const Tilemap = struct {
         const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 250);
         defer allocator.free(data);
         var iter_lines = std.mem.split(u8, data, "\n");
+        var ypos: u32 = 0;
         while (iter_lines.next()) |line| {
-            var tile_arr = std.ArrayList([]Tile).init(allocator);
+            var tile_arr = std.ArrayList(Tile).init(allocator);
             defer tile_arr.deinit();
-            var iter_inner = std.mem.split(u8, line, ' ');
+            var iter_inner = std.mem.split(u8, line, " ");
+            var xpos: u32 = 0;
             while (iter_inner.next()) |val| {
-                const int_val: u32 = std.fmt.parseInt(u32, val, 10) catch undefined;
-                if (int_val != undefined) try tile_arr.append(int_val);
+                if (val.len != 0) {
+                    const int_val: u32 = try std.fmt.parseInt(u32, val, 10);
+                    try tile_arr.append(Tile.init(int_val, xpos, ypos));
+                    xpos += 1;
+                }
             }
-            const arr: []Tile = tile_arr.toOwnedSlice();
+            const arr: []Tile = try tile_arr.toOwnedSlice();
             try map_maker.append(arr);
+            ypos += 1;
+        }
+        const tilemap: [][]Tile = try map_maker.toOwnedSlice();
+        return tilemap;
+    }
+
+    pub fn render(self: *Tilemap, renderer: *c.SDL_Renderer, vp: *Viewport) void {
+        for (0..self.tiles.len) |i| {
+            for (0..self.tiles[i].len) |j| {
+                const tile = self.tiles[i][j];
+                if (vp.can_see(@intFromFloat(tile.x), @intFromFloat(tile.y), @intFromFloat(tile.w), @intFromFloat(tile.h))) {
+                    const rect = c.SDL_Rect{
+                        .x = @as(c_int, @intFromFloat(tile.x)) - vp.x,
+                        .y = @as(c_int, @intFromFloat(tile.y)) - vp.y,
+                        .w = @as(c_int, @intFromFloat(tile.w)),
+                        .h = @as(c_int, @intFromFloat(tile.h)),
+                    };
+                    set_render_color(renderer, Color.make_sdl_color(self.tiles[i][j].get_color()));
+                    _ = c.SDL_RenderFillRect(renderer, &rect);
+                }
+                // render tile
+            }
         }
     }
 
@@ -99,7 +200,7 @@ pub const Tilemap = struct {
     fn print_map(map: [][]Tile) !void {
         for (map) |arr| {
             for (arr) |tile| {
-                print("{d} ", .{tile});
+                print("{any} ", .{tile});
             }
             print("\n", .{});
         }

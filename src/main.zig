@@ -3,15 +3,17 @@ const graphics = @import("graphics.zig");
 const entities = @import("entities.zig");
 const audio = @import("audio.zig");
 
-const Sprite = graphics.Sprite;
 const SoundEffect = audio.SoundEffect;
 const Music = audio.Music;
+
+const Sprite = graphics.Sprite;
 const Viewport = graphics.Viewport;
 const Color = graphics.Color;
 const Window = graphics.Window;
+const Tilemap = graphics.Tilemap;
+
 const Bullet = entities.Bullet;
 const Player = entities.Player;
-
 const Visibility = entities.Visibility;
 const Hitbox = entities.Hitbox;
 const StandardEnemy = entities.StandardEnemy;
@@ -98,6 +100,10 @@ pub fn main() !void {
     defer player_sprite.deinit();
     var player: Player = Player.init(player_sprite, 300, 300, 20, grass_step);
 
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var alloc = gpa.allocator();
+    var map = try Tilemap.init("assets/maps/initial_map", alloc);
+
     var bullets = create_bullets(gunshot);
 
     var temp_enemy: StandardEnemy = StandardEnemy.init(window_width / 3, window_height / 3);
@@ -136,6 +142,7 @@ pub fn main() !void {
         _ = c.SDL_RenderClear(window.renderer);
 
         viewport.update(@intFromFloat(player.x), @intFromFloat(player.y), WORLD_WIDTH, WORLD_HEIGHT);
+        map.render(window.renderer, &viewport);
 
         player.update();
         player.sprite.render(window.renderer, as_rect(player.hb), &viewport);
