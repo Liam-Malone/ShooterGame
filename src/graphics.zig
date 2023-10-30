@@ -15,19 +15,19 @@ pub const Color = enum(u32) {
     white = 0xFFFFFFFF,
     purple = 0x7BF967AA,
     red = 0xFC1A17CC,
-    dark_gray = 0xFF181818,
-    grass = 0x00FF00FF,
-    dirt = 0xBBBBBBFF,
-    wood = 0xBBBBBBAA,
-    stone = 0xFF1818FF,
-    leaves = 0x00FF0088,
+    dark_gray = 0x181818FF,
+    grass = 0x00AA00FF,
+    dirt = 0x3C2414AA,
+    wood = 0x22160B88,
+    stone = 0x7F7F98AA,
+    leaves = 0x00FF0000,
 
     pub fn make_sdl_color(col: Color) c.SDL_Color {
-        var color = @intFromEnum(col);
-        const r: u8 = @truncate((color >> (0 * 8)) & 0xFF);
-        const g: u8 = @truncate((color >> (1 * 8)) & 0xFF);
-        const b: u8 = @truncate((color >> (2 * 8)) & 0xFF);
-        const a: u8 = @truncate((color >> (3 * 8)) & 0xFF);
+        const color = @intFromEnum(col);
+        const r: u8 = @truncate((color >> (3 * 8)) & 0xFF);
+        const g: u8 = @truncate((color >> (2 * 8)) & 0xFF);
+        const b: u8 = @truncate((color >> (1 * 8)) & 0xFF);
+        const a: u8 = @truncate((color >> (0 * 8)) & 0xFF);
 
         return c.SDL_Color{
             .r = r,
