@@ -74,6 +74,7 @@ const TileID = enum(u32) {
         }
     }
 };
+
 const Tile = struct {
     w: f32 = TILE_WIDTH,
     h: f32 = TILE_HEIGHT,
