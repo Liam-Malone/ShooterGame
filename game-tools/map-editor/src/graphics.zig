@@ -12,19 +12,19 @@ pub const Color = enum(u32) {
     white = 0xFFFFFFFF,
     purple = 0x7BF967AA,
     red = 0xFC1A17CC,
-    dark_gray = 0xFF181818,
-    grass = 0x00FF00FF,
-    dirt = 0xBBBBBBFF,
-    wood = 0xBBBBBBAA,
-    stone = 0xFF1818FF,
-    leaves = 0x00FF0088,
+    dark_gray = 0x181818FF,
+    grass = 0x00AA00FF,
+    dirt = 0x3C2414AA,
+    wood = 0x22160B88,
+    stone = 0x7F7F98AA,
+    leaves = 0x00FF0000,
 
     pub fn make_sdl_color(col: Color) c.SDL_Color {
         var color = @intFromEnum(col);
-        const r: u8 = @truncate((color >> (0 * 8)) & 0xFF);
-        const g: u8 = @truncate((color >> (1 * 8)) & 0xFF);
-        const b: u8 = @truncate((color >> (2 * 8)) & 0xFF);
-        const a: u8 = @truncate((color >> (3 * 8)) & 0xFF);
+        const r: u8 = @truncate((color >> (3 * 8)) & 0xFF);
+        const g: u8 = @truncate((color >> (2 * 8)) & 0xFF);
+        const b: u8 = @truncate((color >> (1 * 8)) & 0xFF);
+        const a: u8 = @truncate((color >> (0 * 8)) & 0xFF);
 
         return c.SDL_Color{
             .r = r,
@@ -71,12 +71,30 @@ const TileID = enum(u32) {
         }
     }
 };
+
+const Textures = enum(?c.SDL_Texture) {
+    void,
+    grass,
+    leaves,
+    dirt,
+    stone,
+    gravel,
+
+    pub fn load(tex_path: []const u8) !void {
+        _ = tex_path;
+        // TODO:
+        // work from tex_path to load in textures
+        // and assign to enum entries
+    }
+};
+
 const Tile = struct {
     w: f32 = TILE_WIDTH,
     h: f32 = TILE_HEIGHT,
     x: f32,
     y: f32,
     id: TileID,
+    tex: ?*c.SDL_Texture = Textures.void,
 
     pub fn init(id: u32, x: u32, y: u32) Tile {
         return Tile{
@@ -85,30 +103,13 @@ const Tile = struct {
             .id = try TileID.create(id),
         };
     }
-    pub fn get_color(self: *Tile) Color {
-        var col: Color = undefined;
-        switch (self.id) {
-            TileID.grass => {
-                col = Color.grass;
-            },
-            TileID.dirt => {
-                col = Color.dirt;
-            },
-            TileID.wood => {
-                col = Color.wood;
-            },
-            TileID.stone => {
-                col = Color.stone;
-            },
-            TileID.leaves => {
-                col = Color.leaves;
-            },
-        }
-        return col;
+    pub fn tex(self: *Tile) *c.SDL_Texture {
+        return self.tex;
     }
 };
 pub const Tilemap = struct {
     tiles: [][]Tile,
+    filename: []const u8,
 
     //
     pub fn init(filepath: []const u8, allocator: std.mem.Allocator) !Tilemap {
@@ -125,6 +126,7 @@ pub const Tilemap = struct {
         try print_map(tiles);
         return Tilemap{
             .tiles = tiles,
+            .filename = filepath,
         };
     }
 
@@ -172,6 +174,34 @@ pub const Tilemap = struct {
         }
         const tilemap: [][]Tile = try map_maker.toOwnedSlice();
         return tilemap;
+    }
+
+    // *** ==> TODO <== *** //
+    //**********************************//
+    //           FILE EXPORT            //
+    // -------------------------------- //
+    // export to provided file, by row, //
+    // by tile.                         //
+    //**********************************//
+    pub fn export_to_file(self: *Tilemap, output_file: []const u8, allocator: std.mem.Allocator) !void {
+        var file = std.fs.cwd().openFile(output_file, .{std.fs.File.OpenMode.write_only});
+        for (self.tilemap) |row| {
+            for (row, 0..) |tile, i| {
+                var tile_string: []const u8 = undefined;
+                if (i + 1 == tile.len) {
+                    tile_string = try std.fmt.allocPrint(allocator, "{d}", .{tile.id});
+                } else {
+                    tile_string = try std.fmt.allocPrint(allocator, "{d} ", .{tile.id});
+                }
+                defer allocator.free(tile_string);
+                file.write(tile_string);
+            }
+            file.write("\n");
+        }
+    }
+
+    pub fn save(self: *Tilemap) !void {
+        try export_to_file(self.filename);
     }
 
     pub fn render(self: *Tilemap, renderer: *c.SDL_Renderer, vp: *Viewport) void {
