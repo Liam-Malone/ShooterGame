@@ -2,19 +2,27 @@ const std = @import("std");
 const graphics = @import("graphics.zig");
 const c = @import("c.zig");
 
-const Window = graphics.Window;
-const Viewport = graphics.Viewport;
 const Color = graphics.Color;
+const TextureMap = graphics.TextureMap;
 const Tilemap = graphics.Tilemap;
+const Viewport = graphics.Viewport;
+const Window = graphics.Window;
 
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
-const TEXTURE_PATH = "../../assets/textures/";
+const TEXTURE_PATH = "assets/textures/";
 const WINDOW_WIDTH = 1200;
 const WINDOW_HEIGHT = 1200;
 
 fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
+}
+
+// TODO: on-click, place tile at location
+fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap) void {
+    _ = tilemap;
+    _ = y;
+    _ = x;
 }
 
 var window_width: u32 = WINDOW_WIDTH;
@@ -28,7 +36,9 @@ pub fn main() !void {
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var alloc = gpa.allocator();
-    var map = try Tilemap.init("../../assets/maps/initial_map", alloc);
+    var tex_map = try TextureMap.init(alloc, window.renderer, TEXTURE_PATH);
+    defer tex_map.deinit();
+    var tilemap = try Tilemap.init("assets/maps/initial_map", alloc, &tex_map);
 
     while (!quit) {
         var event: c.SDL_Event = undefined;
@@ -64,7 +74,7 @@ pub fn main() !void {
         set_render_color(window.renderer, Color.make_sdl_color(BACKGROUND_COLOR));
         _ = c.SDL_RenderClear(window.renderer);
 
-        map.render(window.renderer, &viewport);
+        tilemap.render(window.renderer, &viewport);
 
         c.SDL_RenderPresent(window.renderer);
 

@@ -5,8 +5,9 @@ const print = std.debug.print;
 
 const FONT_FILE = @embedFile("DejaVuSans.ttf");
 const PIXEL_BUFFER = 1;
-const TILE_WIDTH = 8;
-const TILE_HEIGHT = 8;
+const TILE_WIDTH = 10;
+const TILE_HEIGHT = 10;
+const TEX_PATH = "assets/textures/";
 
 pub const Color = enum(u32) {
     white = 0xFFFFFFFF,
@@ -18,6 +19,7 @@ pub const Color = enum(u32) {
     wood = 0x22160B88,
     stone = 0x7F7F98AA,
     leaves = 0x00FF0000,
+    void = 0xFF00FFFF,
 
     pub fn make_sdl_color(col: Color) c.SDL_Color {
         var color = @intFromEnum(col);
@@ -41,70 +43,118 @@ const DisplayMode = enum {
     fullscreen,
 };
 
-const TileID = enum(u32) {
-    grass = 0,
-    stone = 1,
-    dirt = 2,
-    wood = 3,
-    leaves = 4,
-
-    pub fn create(id: u32) !TileID {
-        switch (id) {
-            0 => {
-                return TileID.grass;
-            },
-            1 => {
-                return TileID.stone;
-            },
-            2 => {
-                return TileID.dirt;
-            },
-            3 => {
-                return TileID.wood;
-            },
-            4 => {
-                return TileID.leaves;
-            },
-            else => {
-                unreachable;
-            },
-        }
-    }
-};
-
-const Textures = enum(?c.SDL_Texture) {
+const TileID = enum {
     void,
     grass,
-    leaves,
-    dirt,
     stone,
-    gravel,
+    dirt,
+    wood,
+    leaves,
+};
 
-    pub fn load(tex_path: []const u8) !void {
-        _ = tex_path;
-        // TODO:
-        // work from tex_path to load in textures
-        // and assign to enum entries
+pub const TextureMap = struct {
+    // TODO: put in arraylist
+    void_tex: ?*c.SDL_Texture,
+    grass_tex: ?*c.SDL_Texture,
+    dirt_tex: ?*c.SDL_Texture,
+    wood_tex: ?*c.SDL_Texture,
+    leaves_tex: ?*c.SDL_Texture,
+
+    pub fn init(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: []const u8) !TextureMap {
+        return TextureMap{
+            .void_tex = try load_tex(allocator, renderer, path, TileID.void),
+            .grass_tex = try load_tex(allocator, renderer, path, TileID.grass),
+            .dirt_tex = try load_tex(allocator, renderer, path, TileID.dirt),
+            .wood_tex = try load_tex(allocator, renderer, path, TileID.void),
+            .leaves_tex = try load_tex(allocator, renderer, path, TileID.void),
+        };
+    }
+    pub fn deinit(self: *TextureMap) void {
+        c.SDL_DestroyTexture(self.void_tex);
+        c.SDL_DestroyTexture(self.grass_tex);
+        c.SDL_DestroyTexture(self.dirt_tex);
+        c.SDL_DestroyTexture(self.wood_tex);
+        c.SDL_DestroyTexture(self.leaves_tex);
+    }
+    pub fn load_tex(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: []const u8, tile_id: TileID) !?*c.SDL_Texture {
+        _ = path;
+        _ = allocator;
+        var tex: ?*c.SDL_Texture = null;
+        const default_path = TEX_PATH ++ "no_text.png";
+        switch (tile_id) {
+            .void => {
+                tex = c.IMG_LoadTexture(renderer, default_path);
+                std.debug.print("texture: {any}\n\n", .{tex});
+            },
+            .grass => {
+                const tex_path = TEX_PATH ++ "grass.png";
+                std.debug.print("loading tex {any} from path: {s}\n", .{ TileID.void, tex_path });
+                tex = c.IMG_LoadTexture(renderer, tex_path) orelse c.IMG_LoadTexture(renderer, default_path);
+                std.debug.print("texture: {any}\n\n", .{tex});
+            },
+            else => {
+                std.debug.print("FIX ME\n", .{});
+                const tex_path = default_path;
+                std.debug.print("loading tex {any} from path: {s}\n", .{ TileID.void, tex_path });
+                tex = c.IMG_LoadTexture(renderer, tex_path);
+            },
+        }
+        if (tex != null) std.debug.print("no tex\n", .{});
+        return tex;
     }
 };
 
-const Tile = struct {
-    w: f32 = TILE_WIDTH,
-    h: f32 = TILE_HEIGHT,
-    x: f32,
-    y: f32,
+pub const Tile = struct {
+    w: u32 = TILE_WIDTH,
+    h: u32 = TILE_HEIGHT,
+    x: u32,
+    y: u32,
     id: TileID,
-    tex: ?*c.SDL_Texture = Textures.void,
+    tex: ?*c.SDL_Texture,
 
-    pub fn init(id: u32, x: u32, y: u32) Tile {
+    pub fn init(id: u32, x: u32, y: u32, tex_map: *TextureMap) Tile {
+        const tile = switch (id) {
+            0 => TileID.void,
+            1 => TileID.grass,
+            2 => TileID.dirt,
+            else => TileID.void,
+        };
+        //print("ptr: {any}\n", .{tex_map.*.dirt_tex});
         return Tile{
-            .x = @as(f32, @floatFromInt(x)) * TILE_WIDTH,
-            .y = @as(f32, @floatFromInt(y)) * TILE_HEIGHT,
-            .id = try TileID.create(id),
+            .x = x * TILE_WIDTH,
+            .y = y * TILE_HEIGHT,
+            .id = tile,
+            .tex = switch (tile) {
+                TileID.void => tex_map.*.void_tex,
+                TileID.grass => tex_map.*.grass_tex,
+                TileID.dirt => tex_map.*.dirt_tex,
+                else => tex_map.*.void_tex,
+            },
         };
     }
-    pub fn tex(self: *Tile) *c.SDL_Texture {
-        return self.tex;
+    pub fn get_color(self: *Tile) Color {
+        var col: Color = undefined;
+        switch (self.id) {
+            TileID.grass => {
+                col = Color.grass;
+            },
+            TileID.dirt => {
+                col = Color.dirt;
+            },
+            TileID.wood => {
+                col = Color.wood;
+            },
+            TileID.stone => {
+                col = Color.stone;
+            },
+            TileID.leaves => {
+                col = Color.leaves;
+            },
+            else => {
+                col = Color.void;
+            },
+        }
+        return col;
     }
 };
 pub const Tilemap = struct {
@@ -112,9 +162,9 @@ pub const Tilemap = struct {
     filename: []const u8,
 
     //
-    pub fn init(filepath: []const u8, allocator: std.mem.Allocator) !Tilemap {
+    pub fn init(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap) !Tilemap {
         print("\ntrying path: {s}\n", .{filepath});
-        const tiles = try load_from_file(filepath, allocator);
+        const tiles = try load_from_file(filepath, allocator, tex_map);
         var tile_count: usize = 0;
         for (tiles) |row| {
             for (row) |tile| {
@@ -148,7 +198,7 @@ pub const Tilemap = struct {
     //    Tile arrays, which will determine the map.        //
     //******************************************************//
 
-    fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator) ![][]Tile {
+    fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap) ![][]Tile {
         // read in one line at a time, sort into map based on numerical value
         var map_maker = std.ArrayList([]Tile).init(allocator);
         defer map_maker.deinit();
@@ -164,7 +214,7 @@ pub const Tilemap = struct {
             while (iter_inner.next()) |val| {
                 if (val.len != 0) {
                     const int_val: u32 = try std.fmt.parseInt(u32, val, 10);
-                    try tile_arr.append(Tile.init(int_val, xpos, ypos));
+                    try tile_arr.append(Tile.init(int_val, xpos, ypos, tex_map));
                     xpos += 1;
                 }
             }
@@ -208,17 +258,18 @@ pub const Tilemap = struct {
         for (0..self.tiles.len) |i| {
             for (0..self.tiles[i].len) |j| {
                 const tile = self.tiles[i][j];
-                if (vp.can_see(@intFromFloat(tile.x), @intFromFloat(tile.y), @intFromFloat(tile.w), @intFromFloat(tile.h))) {
+                if (vp.can_see(@intCast(tile.x), @intCast(tile.y), @intCast(tile.w), @intCast(tile.h))) {
+                    // render tile
                     const rect = c.SDL_Rect{
-                        .x = @as(c_int, @intFromFloat(tile.x)) - vp.x,
-                        .y = @as(c_int, @intFromFloat(tile.y)) - vp.y,
-                        .w = @as(c_int, @intFromFloat(tile.w)),
-                        .h = @as(c_int, @intFromFloat(tile.h)),
+                        .x = @intCast(tile.x - @as(u32, @intCast(vp.x))),
+                        .y = @intCast(tile.y - @as(u32, @intCast(vp.y))),
+                        .w = @intCast(tile.w),
+                        .h = @intCast(tile.h),
                     };
-                    set_render_color(renderer, Color.make_sdl_color(self.tiles[i][j].get_color()));
-                    _ = c.SDL_RenderFillRect(renderer, &rect);
+                    //set_render_color(renderer, Color.make_sdl_color(self.tiles[i][j].get_color()));
+                    //_ = c.SDL_RenderFillRect(renderer, &rect);
+                    if (self.tiles[i][j].tex) |tex| _ = c.SDL_RenderCopy(renderer, tex, null, &rect); // else print("texptr is null\n", .{});
                 }
-                // render tile
             }
         }
     }
