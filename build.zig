@@ -13,15 +13,16 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    if (exe.target.isDarwin() and exe.target.isNative()) {
+        // assumes you used brew to install sdl2 and sdl2_ttf
+        exe.addIncludePath(
+            .{ .path = "/usr/local/include" },
+        );
+        exe.addLibraryPath(
+            .{ .path = "/usr/local/lib" },
+        );
+    }
     // --- COMMENTED OUT UNTIL I NEED TO FIGURE OUT DEPENDENCY STUFF --- //
-    //if (exe.target.isDarwin() and exe.target.isNative()) {
-    //    // assumes you used brew to install sdl2 and sdl2_ttf
-    //    exe.addIncludePath(
-    //        .{ .path = "/usr/local/include" },
-    //    );
-    //    exe.addLibraryPath(
-    //        .{ .path = "/usr/local/lib" },
-    //    );
     //} else if (exe.target.isWindows()) {
     //    exe.addIncludePath(
     //        .{ .path = "vendor/windows/SDL2/x86_64-w64-mingw32/include" },
