@@ -14,8 +14,8 @@ const DrawTools = enum { single, radius };
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
 const TEXTURE_PATH = "assets/textures/";
-const WINDOW_WIDTH = 800;
-const WINDOW_HEIGHT = 600;
+const WORLD_WIDTH = 800;
+const WORLD_HEIGHT = 600;
 const TILE_WIDTH = 10;
 const TILE_HEIGHT = 10;
 
@@ -30,8 +30,8 @@ fn brush(x: u32, y: u32, r: u32, tilemap: *Tilemap) void {
     const ir: i32 = @intCast(r);
 
     var a: i32 = 0;
-    const max_x: i32 = @intCast(window_width);
-    const max_y: i32 = @intCast(window_height);
+    const max_x: i32 = @intCast(WORLD_WIDTH);
+    const max_y: i32 = @intCast(WORLD_HEIGHT);
     while (a < ir) {
         const min_xval: u32 = @intCast(@max(ix - a, 0));
         const min_yval: u32 = @intCast(@max(iy - a, 0));
@@ -46,14 +46,14 @@ fn brush(x: u32, y: u32, r: u32, tilemap: *Tilemap) void {
 }
 
 fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap) void {
-    tilemap.edit_tile(selected_id, x / TILE_WIDTH, y / TILE_HEIGHT);
+    tilemap.edit_tile(selected_id, x / (TILE_WIDTH), y / (TILE_HEIGHT));
 }
 
 var selected_id: TileID = TileID.grass;
 var selected_tool = DrawTools.single;
 
-var window_width: u32 = WINDOW_WIDTH;
-var window_height: u32 = WINDOW_HEIGHT;
+var window_width: u32 = WORLD_WIDTH;
+var window_height: u32 = WORLD_HEIGHT;
 var quit: bool = false;
 pub fn main() !void {
     var window: Window = try Window.init("ShooterGame", 0, 0, window_width, window_height);
