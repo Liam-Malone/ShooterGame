@@ -43,39 +43,51 @@ const DisplayMode = enum {
     fullscreen,
 };
 
-const TileID = enum {
-    void,
-    grass,
-    stone,
-    dirt,
-    wood,
-    leaves,
+const TileID = enum(u32) {
+    void = 0,
+    grass = 1,
+    dirt = 2,
+    stone = 3,
+    wood = 4,
+    leaves = 5,
 };
 
 pub const TextureMap = struct {
     // TODO: put in arraylist
     // texture_list: std.ArrayList(?*c.SDL_Texture),
-    void_tex: ?*c.SDL_Texture,
-    grass_tex: ?*c.SDL_Texture,
-    dirt_tex: ?*c.SDL_Texture,
-    wood_tex: ?*c.SDL_Texture,
-    leaves_tex: ?*c.SDL_Texture,
+    textures: []?*c.SDL_Texture,
+    //void_tex: ?*c.SDL_Texture,
+    //grass_tex: ?*c.SDL_Texture,
+    //dirt_tex: ?*c.SDL_Texture,
+    //wood_tex: ?*c.SDL_Texture,
+    //leaves_tex: ?*c.SDL_Texture,
 
     pub fn init(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: []const u8) !TextureMap {
+        var tex_list = std.ArrayList(?*c.SDL_Texture).init(allocator);
+        try tex_list.append(try load_tex(allocator, renderer, path, TileID.void));
+        try tex_list.append(try load_tex(allocator, renderer, path, TileID.grass));
+        try tex_list.append(try load_tex(allocator, renderer, path, TileID.dirt));
+        try tex_list.append(try load_tex(allocator, renderer, path, TileID.stone));
+        try tex_list.append(try load_tex(allocator, renderer, path, TileID.wood));
+        try tex_list.append(try load_tex(allocator, renderer, path, TileID.leaves));
         return TextureMap{
-            .void_tex = try load_tex(allocator, renderer, path, TileID.void),
-            .grass_tex = try load_tex(allocator, renderer, path, TileID.grass),
-            .dirt_tex = try load_tex(allocator, renderer, path, TileID.dirt),
-            .wood_tex = try load_tex(allocator, renderer, path, TileID.void),
-            .leaves_tex = try load_tex(allocator, renderer, path, TileID.void),
+            .textures = try tex_list.toOwnedSlice(),
+            //.void_tex = try load_tex(allocator, renderer, path, TileID.void),
+            //.grass_tex = try load_tex(allocator, renderer, path, TileID.grass),
+            //.dirt_tex = try load_tex(allocator, renderer, path, TileID.dirt),
+            //.wood_tex = try load_tex(allocator, renderer, path, TileID.void),
+            //.leaves_tex = try load_tex(allocator, renderer, path, TileID.void),
         };
     }
     pub fn deinit(self: *TextureMap) void {
-        c.SDL_DestroyTexture(self.void_tex);
-        c.SDL_DestroyTexture(self.grass_tex);
-        c.SDL_DestroyTexture(self.dirt_tex);
-        c.SDL_DestroyTexture(self.wood_tex);
-        c.SDL_DestroyTexture(self.leaves_tex);
+        for (self.textures) |tex| {
+            c.SDL_DestroyTexture(tex);
+        }
+        //c.SDL_DestroyTexture(self.void_tex);
+        //c.SDL_DestroyTexture(self.grass_tex);
+        //c.SDL_DestroyTexture(self.dirt_tex);
+        //c.SDL_DestroyTexture(self.wood_tex);
+        //c.SDL_DestroyTexture(self.leaves_tex);
     }
     pub fn load_tex(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: []const u8, tile_id: TileID) !?*c.SDL_Texture {
         _ = path;
@@ -127,12 +139,7 @@ pub const Tile = struct {
             .x = x * w,
             .y = y * h,
             .id = tile,
-            .tex = switch (tile) {
-                TileID.void => tex_map.*.void_tex,
-                TileID.grass => tex_map.*.grass_tex,
-                TileID.dirt => tex_map.*.dirt_tex,
-                else => tex_map.*.void_tex,
-            },
+            .tex = tex_map.*.textures[@intFromEnum(tile)],
         };
     }
     pub fn get_color(self: *Tile) Color {
@@ -172,8 +179,8 @@ pub const Tilemap = struct {
             _ = tile;
             tile_count += 1;
         }
-        print("\n**DEBUG PRINTING TILEMAP**\n\t(tile count: {d})\t\n", .{tile_count});
-        try print_map(tile_list);
+        //print("\n**DEBUG PRINTING TILEMAP**\n\t(tile count: {d})\t\n", .{tile_count});
+        //try print_map(tile_list);
         return Tilemap{
             .tile_list = tile_list,
             .filename = filepath,
@@ -184,34 +191,10 @@ pub const Tilemap = struct {
         self.tile_list.deinit();
     }
 
-    //******************************************************//
-    //                   LOAD CUSTOM TILEMAP                //
-    //    ---------------------------------------------     //
-    //        tilemap file will be something like:          //
-    //                                                      //
-    //                0 1 0 0 0 0 0 0 1 0                   //
-    //                0 1 1 1 1 1 1 1 1 1                   //
-    //                0 0 0 0 0 1 1 0 0 0                   //
-    //                                                      //
-    //                                                      //
-    //                   *** TODO: ***                      //
-    //                 ----------------                     //
-    //                 read from 1 line                     //
-    //                   after export                       //
-    //                 ----------------                     //
-    //                                                      //
-    //    function should read in file line by line and     //
-    //    sort int values into the appropriate Tile enum    //
-    //    values, collecting into an arraylist, then to     //
-    //    an array of Tiles, which is to be added to the    //
-    //    arraylist, and subsequently, the array, of        //
-    //    Tile arrays, which will determine the map.        //
-    //******************************************************//
-
     fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32) !std.ArrayList(Tile) {
         // read in one line at a time, sort into map based on numerical value
         var map = std.ArrayList(Tile).init(allocator); // freed on struct deinit
-        const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 2500);
+        const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 25000);
         defer allocator.free(data);
 
         var iter_lines = std.mem.split(u8, data, "\n");
@@ -224,7 +207,8 @@ pub const Tilemap = struct {
                 const id = if (m_data.next()) |t_id| if (t_id.len > 0) try std.fmt.parseInt(u32, t_id, 10) else 0 else 0;
                 const x = if (m_data.next()) |xpos| if (xpos.len > 0) try std.fmt.parseInt(u32, xpos, 10) else 0 else 0;
                 const y = if (m_data.next()) |ypos| if (ypos.len > 0) try std.fmt.parseInt(u32, ypos, 10) else 0 else 0;
-                try map.append(Tile.init(id, x, y, tex_map, tile_w, tile_h));
+                std.debug.print("id: {d}, x: {d}, y: {d}\n", .{ id, x, y });
+                try map.append(Tile.init(id, x / tile_w, y / tile_h, tex_map, tile_w, tile_h)); // division here is necessary for correct location...
             }
         }
         return map;
@@ -233,6 +217,14 @@ pub const Tilemap = struct {
     pub fn add_tile(self: *Tilemap, id: u32, x: u32, y: u32, tex_map: *TextureMap, tile_w: u32, tile_y: u32) !void {
         std.debug.print("appending tile at pos: [ {d}, {d} ]\nnow has: {d} items\n", .{ x, y, self.tile_list.items.len });
         try self.tile_list.append(Tile.init(id, x, y, tex_map, tile_w, tile_y));
+    }
+    pub fn remove_tile(self: *Tilemap, x: u32, y: u32) !void {
+        for (self.tile_list.items, 0..) |tile, i| {
+            if (tile.x == x * tile.w and tile.y == y * tile.w) {
+                _ = self.tile_list.swapRemove(i);
+                return;
+            }
+        }
     }
 
     // *** ==> TODO <== *** //
@@ -243,18 +235,25 @@ pub const Tilemap = struct {
     // by tile.                         //
     //**********************************//
     pub fn export_to_file(self: *Tilemap, output_file: []const u8, allocator: std.mem.Allocator) !void {
-        var file = std.fs.cwd().openFile(output_file, .{std.fs.File.OpenMode.write_only});
+        var file = try std.fs.cwd().openFile(
+            output_file,
+            .{ .mode = std.fs.File.OpenMode.write_only },
+        );
+        defer file.close();
         for (self.tile_list.items, 0..) |tile, i| {
             var tile_string: []const u8 = undefined;
-            if (i + 1 == tile.len) {
-                tile_string = try std.fmt.allocPrint(allocator, "{d}.{d}.{d}", .{ tile.id, tile.x, tile.y });
+            if (i + 1 == self.tile_list.items.len) {
+                tile_string = try std.fmt.allocPrint(allocator, "{d}.{d}.{d}", .{ @intFromEnum(tile.id), tile.x, tile.y });
+                std.debug.print("tile x: {d}, tile y: {d}\n", .{ tile.x, tile.y });
             } else {
-                tile_string = try std.fmt.allocPrint(allocator, "{d}.{d}.{d} ", .{ tile.id, tile.x, tile.y });
+                tile_string = try std.fmt.allocPrint(allocator, "{d}.{d}.{d} ", .{ @intFromEnum(tile.id), tile.x, tile.y });
+                std.debug.print("tile x: {d}, tile y: {d}\n", .{ tile.x, tile.y });
             }
             defer allocator.free(tile_string);
-            file.write(tile_string);
+            std.debug.print("writing {s} to file\n", .{tile_string});
+            _ = try file.write(tile_string); // catch {} *** TODO *** create and write on NotFound
         }
-        file.write("\n");
+        _ = try file.write("\n"); // catch {}
     }
 
     pub fn save(self: *Tilemap) !void {

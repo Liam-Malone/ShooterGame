@@ -23,8 +23,10 @@ fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
 // TODO: on-click, place tile at location
 fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap, tex_map: *TextureMap) !void {
     // maybe add error popup on fail?
-    try tilemap.add_tile(selected_tiletype_id, x / TILE_WIDTH, y / TILE_HEIGHT, tex_map, TILE_WIDTH, TILE_HEIGHT);
+    try tilemap.remove_tile(x / TILE_WIDTH, y / TILE_HEIGHT);
+    if (selected_tiletype_id != 0) try tilemap.add_tile(selected_tiletype_id, x / TILE_WIDTH, y / TILE_HEIGHT, tex_map, TILE_WIDTH, TILE_HEIGHT);
 }
+
 var selected_tiletype_id: u32 = 1;
 
 var window_width: u32 = WINDOW_WIDTH;
@@ -40,7 +42,8 @@ pub fn main() !void {
     var alloc = gpa.allocator();
     var tex_map = try TextureMap.init(alloc, window.renderer, TEXTURE_PATH);
     defer tex_map.deinit();
-    var tilemap = try Tilemap.init("assets/maps/initial_map", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT);
+    //var tilemap = try Tilemap.init("assets/maps/initial_map", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT);
+    var tilemap = try Tilemap.init("assets/maps/first_export", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT);
     defer tilemap.deinit();
 
     var left_mouse_is_down = false;
@@ -57,7 +60,15 @@ pub fn main() !void {
                     },
                     's' => {
                         // save to file
+                        //tilemap.save();
                     },
+                    'e' => {
+                        //export
+                        try tilemap.export_to_file("assets/maps/first_export", alloc);
+                    },
+                    '0' => selected_tiletype_id = 0,
+                    '1' => selected_tiletype_id = 1,
+                    '2' => selected_tiletype_id = 2,
                     ' ' => {},
                     else => {},
                 },
@@ -67,7 +78,6 @@ pub fn main() !void {
                         const x = if (event.button.x > 0) @as(u32, @intCast(event.button.x)) else 0;
                         const y = if (event.button.y > 0) @as(u32, @intCast(event.button.y)) else 0;
                         try place_at_pos(x, y, &tilemap, &tex_map);
-                        std.debug.print("adding tile in\n", .{});
                         left_mouse_is_down = true;
                     },
                     else => {},
@@ -83,7 +93,6 @@ pub fn main() !void {
                         const x = if (event.button.x > 0) @as(u32, @intCast(event.button.x)) else 0;
                         const y = if (event.button.y > 0) @as(u32, @intCast(event.button.y)) else 0;
                         try place_at_pos(x, y, &tilemap, &tex_map);
-                        std.debug.print("adding tile in\n", .{});
                         window.update();
                     },
                     false => {},
