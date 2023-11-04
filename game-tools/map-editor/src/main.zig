@@ -5,6 +5,7 @@ const c = @import("c.zig");
 const Color = graphics.Color;
 const TextureMap = graphics.TextureMap;
 const Tilemap = graphics.Tilemap;
+const TileID = graphics.TileID;
 const Viewport = graphics.Viewport;
 const Window = graphics.Window;
 
@@ -23,36 +24,32 @@ fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
 }
 
 // partially in -- implement radius paint
-fn brush(x: u32, y: u32, r: u32, tilemap: *Tilemap, tex_map: *TextureMap) !void {
+fn brush(x: u32, y: u32, r: u32, tilemap: *Tilemap) void {
     var ix: i32 = @intCast(x);
     var iy: i32 = @intCast(y);
     const ir: i32 = @intCast(r);
 
-    const xstart: usize = if (ix - ir > 0) @intCast(ix - ir) else 0;
-    const xend: usize = if (ix + ir <= window_width) @intCast(ix + ir) else window_width;
-    const ystart: usize = if (iy - ir > 0) @intCast(iy - ir) else 0;
-    const yend: usize = if (iy + ir <= window_height) @intCast(iy + ir) else window_height;
+    var a: i32 = 0;
+    const max_x: i32 = @intCast(window_width);
+    const max_y: i32 = @intCast(window_height);
+    while (a < ir) {
+        const min_xval: u32 = @intCast(@max(ix - a, 0));
+        const min_yval: u32 = @intCast(@max(iy - a, 0));
+        const max_xval: u32 = @intCast(@min(ix - a, max_x));
+        const max_yval: u32 = @intCast(@min(iy - a, max_y));
 
-    for (xstart..x) |lx| {
-        for (ystart..y) |ly| {
-            try place_at_pos(@intCast(lx), @intCast(ly), tilemap, tex_map);
-        }
+        if (min_xval == 0 or min_yval == 0 or max_xval == max_x or max_yval == max_y) return;
+        place_at_pos(min_xval, min_yval, tilemap);
+        place_at_pos(max_xval, max_yval, tilemap);
+        a += 1;
     }
-    std.debug.print("x: {any}\n", .{x});
-    if (x > xstart and x < xend) for (x..xend) |rx| {
-        if (y > ystart and y < yend) for (y..yend) |ry| {
-            try place_at_pos(@intCast(rx), @intCast(ry), tilemap, tex_map);
-        };
-    };
 }
 
-fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap, tex_map: *TextureMap) !void {
-    // maybe add error popup on fail?
-    try tilemap.remove_tile(x / TILE_WIDTH, y / TILE_HEIGHT);
-    if (selected_tiletype_id != 0) try tilemap.add_tile(selected_tiletype_id, x / TILE_WIDTH, y / TILE_HEIGHT, tex_map, TILE_WIDTH, TILE_HEIGHT);
+fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap) void {
+    tilemap.edit_tile(selected_id, x / TILE_WIDTH, y / TILE_HEIGHT);
 }
 
-var selected_tiletype_id: u32 = 1;
+var selected_id: TileID = TileID.grass;
 var selected_tool = DrawTools.single;
 
 var window_width: u32 = WINDOW_WIDTH;
@@ -69,7 +66,6 @@ pub fn main() !void {
     var tex_map = try TextureMap.init(alloc, window.renderer, TEXTURE_PATH);
     defer tex_map.deinit();
     var tilemap = try Tilemap.init("assets/maps/first_export", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, window);
-    defer tilemap.deinit();
 
     var left_mouse_is_down = false;
     while (!quit) {
@@ -91,9 +87,9 @@ pub fn main() !void {
                         //export
                         try tilemap.export_to_file("assets/maps/first_export", alloc);
                     },
-                    '0' => selected_tiletype_id = 0,
-                    '1' => selected_tiletype_id = 1,
-                    '2' => selected_tiletype_id = 2,
+                    '0' => selected_id = TileID.void,
+                    '1' => selected_id = TileID.grass,
+                    '2' => selected_id = TileID.dirt,
                     ' ' => selected_tool = switch (selected_tool) {
                         DrawTools.single => DrawTools.radius,
                         DrawTools.radius => DrawTools.single,
@@ -106,8 +102,8 @@ pub fn main() !void {
                         const x = if (event.button.x > 0) @as(u32, @intCast(event.button.x)) else 0;
                         const y = if (event.button.y > 0) @as(u32, @intCast(event.button.y)) else 0;
                         switch (selected_tool) {
-                            DrawTools.single => try place_at_pos(x, y, &tilemap, &tex_map),
-                            DrawTools.radius => try brush(x, y, 4, &tilemap, &tex_map),
+                            DrawTools.single => place_at_pos(x, y, &tilemap),
+                            DrawTools.radius => brush(x, y, 4, &tilemap),
                         }
                         left_mouse_is_down = true;
                     },
@@ -124,8 +120,8 @@ pub fn main() !void {
                         const x = if (event.button.x > 0) @as(u32, @intCast(event.button.x)) else 0;
                         const y = if (event.button.y > 0) @as(u32, @intCast(event.button.y)) else 0;
                         switch (selected_tool) {
-                            DrawTools.single => try place_at_pos(x, y, &tilemap, &tex_map),
-                            DrawTools.radius => try brush(x, y, 20, &tilemap, &tex_map),
+                            DrawTools.single => place_at_pos(x, y, &tilemap),
+                            DrawTools.radius => brush(x, y, 10, &tilemap),
                         }
                         window.update();
                     },
