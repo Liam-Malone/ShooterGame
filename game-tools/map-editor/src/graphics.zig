@@ -200,8 +200,7 @@ pub const Tilemap = struct {
     //**********************************//
     fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, world_width: u32, world_height: u32) ![][]Tile {
         const arr_len = (world_width / tile_w) * (world_height / tile_h);
-        // read in one line at a time, sort into map based on numerical value
-        var map = std.ArrayList([]Tile).init(allocator); // freed on struct deinit
+        var map = std.ArrayList([]Tile).init(allocator); // freed on return
         const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 855000);
         defer allocator.free(data);
 
@@ -211,7 +210,6 @@ pub const Tilemap = struct {
         var is_first = true;
         while (iter_lines.next()) |line| {
             if (line.len < 1 and is_first) {
-                // fill void
                 const id = 0;
                 while (y < world_height / tile_h) {
                     var x: u32 = 0;
@@ -233,10 +231,6 @@ pub const Tilemap = struct {
                         const id = try std.fmt.parseInt(u32, val, 10);
                         std.debug.print("id: {d}, x: {d}, y: {d}\n", .{ id, x, y });
                         try col.append(Tile.init(id, x, y, tex_map, tile_w, tile_h, true));
-                        //if (id != 0)
-                        //    try col.append(Tile.init(id, x, y, tex_map, tile_w, tile_h, true))
-                        //else
-                        //    try col.append(Tile.init(id, 0, 0, tex_map, tile_w, tile_h, false));
                         counter += 1;
                         x += 1;
                     }
@@ -248,24 +242,6 @@ pub const Tilemap = struct {
         }
         return try map.toOwnedSlice();
     }
-
-    //***********************************//
-    //  *** WARNING: THIS IS BROKEN ***  //
-    //  need to account for switch to    //
-    //  tile array, and change tile id   //
-    //  at co-ords, create if nonexistent//
-    //***********************************//
-    pub fn add_tile(self: *Tilemap, id: u32, x: u32, y: u32, tex_map: *TextureMap, tile_w: u32, tile_y: u32) !void {
-        std.debug.print("appending tile at pos: [ {d}, {d} ]\nnow has: {d} items\n", .{ x, y, self.tile_list.items.len });
-        try self.tile_list.append(Tile.init(id, x, y, tex_map, tile_w, tile_y));
-    }
-
-    //***********************************//
-    //  *** WARNING: THIS IS BROKEN ***  //
-    //  need to account for switch to    //
-    //  tile array, and change tile id   //
-    //  at co-ords, create if nonexistent//
-    //***********************************//
     pub fn edit_tile(self: *Tilemap, id: TileID, x: u32, y: u32) void {
         if (!self.tile_list[y][x].is_assigned) {
             std.debug.print("edit new item []\n", .{});
@@ -281,21 +257,6 @@ pub const Tilemap = struct {
             } else {
                 std.debug.print("edit item []\n", .{});
                 self.tile_list[y][x].update(id);
-                return;
-            }
-        }
-    }
-
-    //***********************************//
-    //  *** WARNING: THIS IS BROKEN ***  //
-    //  need to account for switch to    //
-    //  tile array, and change tile id   //
-    //  at co-ords, create if nonexistent//
-    //***********************************//
-    pub fn remove_tile(self: *Tilemap, x: u32, y: u32) !void {
-        for (self.tile_list, 0..) |tile, i| {
-            if (tile.x == x * tile.w and tile.y == y * tile.w) {
-                self.tile_list[i].id = TileID.void;
                 return;
             }
         }
@@ -342,7 +303,6 @@ pub const Tilemap = struct {
         for (self.tile_list, 0..) |col, i| {
             for (col, 0..) |tile, j| {
                 _ = tile;
-                //tile.render(renderer, vp);
                 self.tile_list[i][j].render(renderer, vp);
             }
         }
