@@ -11,18 +11,19 @@ const Window = graphics.Window;
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
 const TEXTURE_PATH = "assets/textures/";
-const WINDOW_WIDTH = 1200;
-const WINDOW_HEIGHT = 1200;
+const WINDOW_WIDTH = 800;
+const WINDOW_HEIGHT = 600;
+const TILE_WIDTH = 10;
+const TILE_HEIGHT = 10;
 
 fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
 
 // TODO: on-click, place tile at location
-fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap) void {
-    _ = tilemap;
-    _ = y;
-    _ = x;
+fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap, tex_map: *TextureMap) !void {
+    // maybe add error popup on fail?
+    try tilemap.add_tile(1, x / TILE_WIDTH, y / TILE_HEIGHT, tex_map, TILE_WIDTH, TILE_HEIGHT);
 }
 
 var window_width: u32 = WINDOW_WIDTH;
@@ -38,7 +39,8 @@ pub fn main() !void {
     var alloc = gpa.allocator();
     var tex_map = try TextureMap.init(alloc, window.renderer, TEXTURE_PATH);
     defer tex_map.deinit();
-    var tilemap = try Tilemap.init("assets/maps/initial_map", alloc, &tex_map);
+    var tilemap = try Tilemap.init("assets/maps/initial_map", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT);
+    defer tilemap.deinit();
 
     while (!quit) {
         var event: c.SDL_Event = undefined;
@@ -60,6 +62,10 @@ pub fn main() !void {
                 c.SDL_MOUSEBUTTONDOWN => switch (event.button.button) {
                     c.SDL_BUTTON_LEFT => {
                         // use current tool
+                        const x = if (event.button.x > 0) @as(u32, @intCast(event.button.x)) else 0;
+                        const y = if (event.button.y > 0) @as(u32, @intCast(event.button.y)) else 0;
+                        try place_at_pos(x, y, &tilemap, &tex_map);
+                        std.debug.print("adding tile in\n", .{});
                     },
                     else => {},
                 },
