@@ -23,8 +23,9 @@ fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
 // TODO: on-click, place tile at location
 fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap, tex_map: *TextureMap) !void {
     // maybe add error popup on fail?
-    try tilemap.add_tile(1, x / TILE_WIDTH, y / TILE_HEIGHT, tex_map, TILE_WIDTH, TILE_HEIGHT);
+    try tilemap.add_tile(selected_tiletype_id, x / TILE_WIDTH, y / TILE_HEIGHT, tex_map, TILE_WIDTH, TILE_HEIGHT);
 }
+var selected_tiletype_id: u32 = 1;
 
 var window_width: u32 = WINDOW_WIDTH;
 var window_height: u32 = WINDOW_HEIGHT;
@@ -42,6 +43,7 @@ pub fn main() !void {
     var tilemap = try Tilemap.init("assets/maps/initial_map", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT);
     defer tilemap.deinit();
 
+    var left_mouse_is_down = false;
     while (!quit) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) {
@@ -66,8 +68,25 @@ pub fn main() !void {
                         const y = if (event.button.y > 0) @as(u32, @intCast(event.button.y)) else 0;
                         try place_at_pos(x, y, &tilemap, &tex_map);
                         std.debug.print("adding tile in\n", .{});
+                        left_mouse_is_down = true;
                     },
                     else => {},
+                },
+                c.SDL_MOUSEBUTTONUP => switch (event.button.button) {
+                    c.SDL_BUTTON_LEFT => {
+                        left_mouse_is_down = false;
+                    },
+                    else => {},
+                },
+                c.SDL_MOUSEMOTION => switch (left_mouse_is_down) {
+                    true => {
+                        const x = if (event.button.x > 0) @as(u32, @intCast(event.button.x)) else 0;
+                        const y = if (event.button.y > 0) @as(u32, @intCast(event.button.y)) else 0;
+                        try place_at_pos(x, y, &tilemap, &tex_map);
+                        std.debug.print("adding tile in\n", .{});
+                        window.update();
+                    },
+                    false => {},
                 },
                 else => {},
             }
