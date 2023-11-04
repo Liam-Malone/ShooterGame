@@ -53,41 +53,26 @@ const TileID = enum(u32) {
 };
 
 pub const TextureMap = struct {
-    // TODO: put in arraylist
-    // texture_list: std.ArrayList(?*c.SDL_Texture),
     textures: []?*c.SDL_Texture,
-    //void_tex: ?*c.SDL_Texture,
-    //grass_tex: ?*c.SDL_Texture,
-    //dirt_tex: ?*c.SDL_Texture,
-    //wood_tex: ?*c.SDL_Texture,
-    //leaves_tex: ?*c.SDL_Texture,
 
     pub fn init(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: []const u8) !TextureMap {
         var tex_list = std.ArrayList(?*c.SDL_Texture).init(allocator);
+
         try tex_list.append(try load_tex(allocator, renderer, path, TileID.void));
         try tex_list.append(try load_tex(allocator, renderer, path, TileID.grass));
         try tex_list.append(try load_tex(allocator, renderer, path, TileID.dirt));
         try tex_list.append(try load_tex(allocator, renderer, path, TileID.stone));
         try tex_list.append(try load_tex(allocator, renderer, path, TileID.wood));
         try tex_list.append(try load_tex(allocator, renderer, path, TileID.leaves));
+
         return TextureMap{
             .textures = try tex_list.toOwnedSlice(),
-            //.void_tex = try load_tex(allocator, renderer, path, TileID.void),
-            //.grass_tex = try load_tex(allocator, renderer, path, TileID.grass),
-            //.dirt_tex = try load_tex(allocator, renderer, path, TileID.dirt),
-            //.wood_tex = try load_tex(allocator, renderer, path, TileID.void),
-            //.leaves_tex = try load_tex(allocator, renderer, path, TileID.void),
         };
     }
     pub fn deinit(self: *TextureMap) void {
         for (self.textures) |tex| {
             c.SDL_DestroyTexture(tex);
         }
-        //c.SDL_DestroyTexture(self.void_tex);
-        //c.SDL_DestroyTexture(self.grass_tex);
-        //c.SDL_DestroyTexture(self.dirt_tex);
-        //c.SDL_DestroyTexture(self.wood_tex);
-        //c.SDL_DestroyTexture(self.leaves_tex);
     }
     pub fn load_tex(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: []const u8, tile_id: TileID) !?*c.SDL_Texture {
         _ = path;
@@ -132,7 +117,6 @@ pub const Tile = struct {
             2 => TileID.dirt,
             else => TileID.void,
         };
-        //print("ptr: {any}\n", .{tex_map.*.dirt_tex});
         return Tile{
             .w = w,
             .h = h,
@@ -168,19 +152,17 @@ pub const Tile = struct {
     }
 };
 pub const Tilemap = struct {
-    tile_list: std.ArrayList(Tile),
+    tile_list: []Tile,
     filename: []const u8,
 
-    pub fn init(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32) !Tilemap {
+    pub fn init(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, window: Window) !Tilemap {
         print("\ntrying path: {s}\n", .{filepath});
-        const tile_list = try load_from_file(filepath, allocator, tex_map, tile_w, tile_h);
+        const tile_list = try load_from_file(filepath, allocator, tex_map, tile_w, tile_h, window);
         var tile_count: usize = 0;
         for (tile_list.items) |tile| {
             _ = tile;
             tile_count += 1;
         }
-        //print("\n**DEBUG PRINTING TILEMAP**\n\t(tile count: {d})\t\n", .{tile_count});
-        //try print_map(tile_list);
         return Tilemap{
             .tile_list = tile_list,
             .filename = filepath,
@@ -188,10 +170,20 @@ pub const Tilemap = struct {
     }
 
     pub fn deinit(self: *Tilemap) void {
-        self.tile_list.deinit();
+        _ = self;
     }
 
-    fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32) !std.ArrayList(Tile) {
+    //**********************************//
+    //       MAP IMPORT FROM FILE       //
+    //  ------------------------------  //
+    //       *** ==> TODO <== ***       //
+    //                                  //
+    //  enable allocation of correctly  //
+    //  sized buffers depending on      //
+    //  the size of the map file        //
+    //**********************************//
+    fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, world_width: u32, world_height: u32) !std.ArrayList(Tile) {
+        const arr_len = (world_width / tile_w) * (world_height / tile_h);
         // read in one line at a time, sort into map based on numerical value
         var map = std.ArrayList(Tile).init(allocator); // freed on struct deinit
         const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 25000);
@@ -211,28 +203,56 @@ pub const Tilemap = struct {
                 try map.append(Tile.init(id, x / tile_w, y / tile_h, tex_map, tile_w, tile_h)); // division here is necessary for correct location...
             }
         }
-        return map;
+        while (map.items.len < arr_len) {
+            try map.append(Tile.init(0, 0, 0, tex_map, tile_w, tile_h));
+        }
+        return map.toOwnedSlice();
     }
 
+    //***********************************//
+    //  *** WARNING: THIS IS BROKEN ***  //
+    //  need to account for switch to    //
+    //  tile array, and change tile id   //
+    //  at co-ords, create if nonexistent//
+    //***********************************//
     pub fn add_tile(self: *Tilemap, id: u32, x: u32, y: u32, tex_map: *TextureMap, tile_w: u32, tile_y: u32) !void {
         std.debug.print("appending tile at pos: [ {d}, {d} ]\nnow has: {d} items\n", .{ x, y, self.tile_list.items.len });
         try self.tile_list.append(Tile.init(id, x, y, tex_map, tile_w, tile_y));
     }
+
+    //***********************************//
+    //  *** WARNING: THIS IS BROKEN ***  //
+    //  need to account for switch to    //
+    //  tile array, and change tile id   //
+    //  at co-ords, create if nonexistent//
+    //***********************************//
+    pub fn edit_tile(self: *Tilemap, id: u32, x: u32, y: u32) void {
+        for (self.tile_list.items, 0..) |t, i| {
+            if (t.x == x and t.y == y) self.tile_list.items[i] = id;
+        }
+    }
+
+    //***********************************//
+    //  *** WARNING: THIS IS BROKEN ***  //
+    //  need to account for switch to    //
+    //  tile array, and change tile id   //
+    //  at co-ords, create if nonexistent//
+    //***********************************//
     pub fn remove_tile(self: *Tilemap, x: u32, y: u32) !void {
         for (self.tile_list.items, 0..) |tile, i| {
             if (tile.x == x * tile.w and tile.y == y * tile.w) {
-                _ = self.tile_list.swapRemove(i);
+                self.tile_list.swapRemove(i);
                 return;
             }
         }
     }
 
-    // *** ==> TODO <== *** //
     //**********************************//
     //           FILE EXPORT            //
     // -------------------------------- //
-    // export to provided file, by row, //
-    // by tile.                         //
+    //       *** ==> TODO <== ***       //
+    // add check for file existence and //
+    // create file if it does not exist //
     //**********************************//
     pub fn export_to_file(self: *Tilemap, output_file: []const u8, allocator: std.mem.Allocator) !void {
         var file = try std.fs.cwd().openFile(
@@ -247,7 +267,7 @@ pub const Tilemap = struct {
                 std.debug.print("tile x: {d}, tile y: {d}\n", .{ tile.x, tile.y });
             } else {
                 tile_string = try std.fmt.allocPrint(allocator, "{d}.{d}.{d} ", .{ @intFromEnum(tile.id), tile.x, tile.y });
-                std.debug.print("tile x: {d}, tile y: {d}\n", .{ tile.x, tile.y });
+                std.debug.print("tile x: {d}, tile y: {d}\ntile id: {any}", .{ tile.x, tile.y, tile.id });
             }
             defer allocator.free(tile_string);
             std.debug.print("writing {s} to file\n", .{tile_string});
@@ -270,7 +290,7 @@ pub const Tilemap = struct {
                     .w = @intCast(tile.w),
                     .h = @intCast(tile.h),
                 };
-                if (tile.tex) |tex| _ = c.SDL_RenderCopy(renderer, tex, null, &rect); // else print("texptr is null\n", .{});
+                if (tile.tex) |tex| _ = c.SDL_RenderCopy(renderer, tex, null, &rect);
             }
         }
     }
