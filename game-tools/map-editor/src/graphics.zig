@@ -256,6 +256,7 @@ pub const Tilemap = struct {
         return try map.toOwnedSlice();
     }
     pub fn edit_tile(self: *Tilemap, id: TileID, x: u32, y: u32) void {
+        if (y >= self.tile_list.len or x >= self.tile_list[0].len) return;
         if (!self.tile_list[y][x].is_assigned) {
             std.debug.print("edit new item []\n", .{});
             self.tile_list[y][x].x = @as(i32, @intCast(x)) * self.tile_list[y][x].w;

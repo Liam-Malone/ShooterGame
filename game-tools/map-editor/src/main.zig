@@ -115,8 +115,8 @@ pub fn main() !void {
                     c.SDL_BUTTON_LEFT => {
                         // use current tool
                         // *** TODO: need to fix logic for differing camera positoins ***
-                        const x = if (event.button.x - viewport.x > 0) @as(u32, @intCast(event.button.x)) else 0;
-                        const y = if (event.button.y - viewport.y > 0) @as(u32, @intCast(event.button.y)) else 0;
+                        const x = if (event.button.x + viewport.x > 0) @as(u32, @intCast(event.button.x + viewport.x)) else 0;
+                        const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
                         switch (selected_tool) {
                             DrawTools.single => place_at_pos(x, y, &tilemap),
                             DrawTools.radius => brush(x, y, 4, &tilemap),
@@ -134,8 +134,8 @@ pub fn main() !void {
                 c.SDL_MOUSEMOTION => switch (left_mouse_is_down) {
                     true => {
                         // *** TODO: need to fix logic for differing camera positoins ***
-                        const x = if (event.button.x > 0 and event.button.x - viewport.x > 0) @as(u32, @intCast(event.button.x)) else 0;
-                        const y = if (event.button.y > 0 and event.button.y - viewport.y > 0) @as(u32, @intCast(event.button.y)) else 0;
+                        const x = if (event.button.x + viewport.x > 0) @as(u32, @intCast(event.button.x + viewport.x)) else 0;
+                        const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
                         switch (selected_tool) {
                             DrawTools.single => place_at_pos(x, y, &tilemap),
                             DrawTools.radius => brush(x, y, 10, &tilemap),
