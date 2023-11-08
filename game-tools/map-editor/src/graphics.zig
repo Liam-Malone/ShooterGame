@@ -55,15 +55,15 @@ pub const TileID = enum(u32) {
 pub const TextureMap = struct {
     textures: []?*c.SDL_Texture,
 
-    pub fn init(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8) !TextureMap {
+    pub fn init(allocator: std.mem.Allocator, arena_allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8) !TextureMap {
         var tex_list = std.ArrayList(?*c.SDL_Texture).init(allocator);
 
-        try tex_list.append(try load_tex(allocator, renderer, path, TileID.void));
-        try tex_list.append(try load_tex(allocator, renderer, path, TileID.grass));
-        try tex_list.append(try load_tex(allocator, renderer, path, TileID.dirt));
-        try tex_list.append(try load_tex(allocator, renderer, path, TileID.stone));
-        try tex_list.append(try load_tex(allocator, renderer, path, TileID.wood));
-        try tex_list.append(try load_tex(allocator, renderer, path, TileID.leaves));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.void));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.grass));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.dirt));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.stone));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.wood));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.leaves));
 
         return TextureMap{
             .textures = try tex_list.toOwnedSlice(),
@@ -74,61 +74,41 @@ pub const TextureMap = struct {
             c.SDL_DestroyTexture(tex);
         }
     }
-    // reference
-    //fn convertBack(allocator: *std.mem.Allocator, args: []const []const u8) ![*c]const [*c]const u8 {
-    //     var result = try allocator.alloc([*]const u8, args.len);
-    //     var i: usize = 0;
-    //     while (i < args.len) {
-    //         result[i] = @ptrCast(args[i].ptr);
-    //         i += 1;
-    //     }
-    //     return result.ptr;
-    //}
-
-    pub fn load_tex(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8, tile_id: TileID) !?*c.SDL_Texture {
-        var n = try std.fmt.allocPrint(allocator, "{s}{s}", .{ path, "grass.png" });
-        defer allocator.free(n);
-
-        std.debug.print("formed str: {s}\n", .{n});
-        std.debug.print("type of formed str is: {any}\n", .{@TypeOf(n)});
-        const str: *const [:0]u8 = @alignCast(@ptrCast(n));
-
-        var tmp = try allocator.alloc(u8, n.len + 1);
-        defer allocator.free(tmp);
+    // arena alloc_time
+    pub fn load_tex(arena_allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8, tile_id: TileID) !?*c.SDL_Texture {
+        var tex: ?*c.SDL_Texture = null;
+        var default_tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "no_tex.png" });
         var i: usize = 0;
-        while (i <= n.len - 1) {
-            tmp[i] = n[i];
+        const tmp_def = try arena_allocator.alloc(u8, default_tex_path.len + 1);
+        tmp_def[default_tex_path.len] = 0;
+        while (i < default_tex_path.len) {
+            tmp_def[i] = default_tex_path[i];
             i += 1;
         }
-        tmp[n.len] = 0;
-
-        const tmp_str = tmp[0..n.len :0];
-        std.debug.print("type of tmp_str is: {any}\n", .{@TypeOf(tmp_str)});
-        std.debug.print("tmp_str is: {s}\n", .{tmp_str});
-        var tex: ?*c.SDL_Texture = null;
-        const default_path = TEX_PATH ++ "no_tex.png";
+        const default_path = tmp_def[0..default_tex_path.len :0];
         std.debug.print("type of default: {any}\n", .{@TypeOf(default_path)});
-        std.debug.print("formed and cast str is: {s}\n", .{str});
-        std.debug.print("type of formed and cast str is: {any}\n", .{@TypeOf(str)});
+
+        var tex_path: []u8 = undefined;
         switch (tile_id) {
-            .void => {
-                tex = c.IMG_LoadTexture(renderer, @ptrCast(str)) orelse c.IMG_LoadTexture(renderer, default_path);
-                std.debug.print("texture: {any}\n\n", .{tex});
-            },
-            .grass => {
-                const tex_path = TEX_PATH ++ "grass.png";
-                std.debug.print("loading tex {any} from path: {s}\n", .{ TileID.void, tex_path });
-                tex = c.IMG_LoadTexture(renderer, @ptrCast(tmp_str)) orelse c.IMG_LoadTexture(renderer, default_path);
-                std.debug.print("texture: {any}\n\n", .{tex});
-            },
-            else => {
-                std.debug.print("FIX ME\n", .{});
-                const tex_path = default_path;
-                std.debug.print("loading tex {any} from path: {s}\n", .{ TileID.void, tex_path });
-                tex = c.IMG_LoadTexture(renderer, tex_path) orelse c.IMG_LoadTexture(renderer, default_path);
+            .void => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "no_tex.png" }),
+            .grass => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "grass.png" }),
+            .stone => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "basic-stone.png" }),
+            .dirt, .wood, .leaves => {
+                std.debug.print("*** TODO: add texture for {any} *** \n", .{tile_id});
+                tex_path = default_tex_path;
             },
         }
-        if (tex != null) std.debug.print("no tex\n", .{});
+
+        var tmp = try arena_allocator.alloc(u8, tex_path.len + 1);
+        i = 0;
+        while (i < tex_path.len) {
+            tmp[i] = tex_path[i];
+            i += 1;
+        }
+        tmp[tex_path.len] = 0;
+        const tmp_str = tmp[0..tex_path.len :0];
+
+        tex = c.IMG_LoadTexture(renderer, @ptrCast(tmp_str)) orelse c.IMG_LoadTexture(renderer, default_path);
         return tex;
     }
 };
@@ -202,9 +182,9 @@ pub const Tilemap = struct {
     tile_list: [][]Tile,
     filename: []const u8,
 
-    pub fn init(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, window: Window) !Tilemap {
+    pub fn init(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, world_width: u32, world_height: u32) !Tilemap {
         print("\ntrying path: {s}\n", .{filepath});
-        var tile_list = try load_from_file(filepath, allocator, tex_map, tile_w, tile_h, window.width, window.height);
+        var tile_list = try load_from_file(filepath, allocator, tex_map, tile_w, tile_h, world_width, world_height);
         var tile_count: usize = 0;
         for (tile_list) |tile| {
             _ = tile;
@@ -267,6 +247,7 @@ pub const Tilemap = struct {
                         x += 1;
                     }
                 }
+                // need to adjust to world size instead of window / predefined map
                 y += 1;
                 try map.append(try col.toOwnedSlice());
             }
@@ -331,13 +312,25 @@ pub const Tilemap = struct {
         try self.export_to_file(self.filename, allocator);
     }
 
-    pub fn render(self: *Tilemap, renderer: *c.SDL_Renderer, vp: *Viewport) void {
+    pub fn render(self: *Tilemap, renderer: *c.SDL_Renderer, vp: *Viewport, window: Window) void {
+        _ = window;
         for (self.tile_list, 0..) |col, i| {
             for (col, 0..) |tile, j| {
                 _ = tile;
                 self.tile_list[i][j].render(renderer, vp);
             }
         }
+        // draw grid here
+        //var x: i32 = 0;
+        //var y: i32 = 0;
+        //while (x < window.width) {
+        //    _ = c.SDL_RenderDrawLine(renderer, x - vp.x, 0 - vp.y, x - vp.x, @as(i32, @intCast(window.height)) - vp.y);
+        //    x += self.tile_list[0][0].w;
+        //}
+        //while (y < window.height) {
+        //    _ = c.SDL_RenderDrawLine(renderer, 0 - vp.x, y - vp.y, @as(i32, @intCast(window.width)) - vp.x, y - vp.y);
+        //    y += self.tile_list[0][0].h;
+        //}
     }
 
     // debug purposes
@@ -375,6 +368,8 @@ pub const Viewport = struct {
     pub fn update(self: *Viewport) void {
         self.x += self.dx;
         self.y += self.dy;
+        self.dy += if (self.dy > 0) -1 else if (self.dy < 0) 1 else 0;
+        self.dx += if (self.dx > 0) -1 else if (self.dx < 0) 1 else 0;
         self.rect = c.SDL_Rect{
             .x = @as(c_int, self.x),
             .y = @as(c_int, self.y),

@@ -14,8 +14,8 @@ const DrawTools = enum { single, radius };
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
 const TEXTURE_PATH = "assets/textures/";
-const WORLD_WIDTH = 800;
-const WORLD_HEIGHT = 600;
+const WORLD_WIDTH = 2800;
+const WORLD_HEIGHT = 2800;
 const TILE_WIDTH = 10;
 const TILE_HEIGHT = 10;
 
@@ -52,8 +52,8 @@ fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap) void {
 var selected_id: TileID = TileID.grass;
 var selected_tool = DrawTools.single;
 
-var window_width: u32 = WORLD_WIDTH;
-var window_height: u32 = WORLD_HEIGHT;
+var window_width: u32 = 800;
+var window_height: u32 = 600;
 var quit: bool = false;
 pub fn main() !void {
     var window: Window = try Window.init("ShooterGame", 0, 0, window_width, window_height);
@@ -63,9 +63,11 @@ pub fn main() !void {
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var alloc = gpa.allocator();
-    var tex_map = try TextureMap.init(alloc, window.renderer, @constCast(@ptrCast("assets/textures/")));
+    var arena = std.heap.ArenaAllocator.init(alloc);
+    var arena_alloc = arena.allocator();
+    var tex_map = try TextureMap.init(alloc, arena_alloc, window.renderer, @constCast(@ptrCast("assets/textures/")));
     defer tex_map.deinit();
-    var tilemap = try Tilemap.init("assets/maps/first_export", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, window);
+    var tilemap = try Tilemap.init("assets/maps/next_test", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
 
     var left_mouse_is_down = false;
     while (!quit) {
@@ -95,7 +97,7 @@ pub fn main() !void {
                     },
                     '0' => selected_id = TileID.void,
                     '1' => selected_id = TileID.grass,
-                    '2' => selected_id = TileID.dirt,
+                    '2' => selected_id = TileID.stone,
                     ' ' => selected_tool = switch (selected_tool) {
                         DrawTools.single => DrawTools.radius,
                         DrawTools.radius => DrawTools.single,
@@ -140,6 +142,10 @@ pub fn main() !void {
                     },
                     false => {},
                 },
+                c.SDL_MOUSEWHEEL => {
+                    viewport.dy = if (event.wheel.y > 0) -20 else if (event.wheel.y < 0) 20 else 0;
+                    viewport.dx = if (event.wheel.x > 0) 20 else if (event.wheel.x < 0) -20 else 0;
+                },
                 else => {},
             }
         }
@@ -152,7 +158,7 @@ pub fn main() !void {
         set_render_color(window.renderer, Color.make_sdl_color(BACKGROUND_COLOR));
         _ = c.SDL_RenderClear(window.renderer);
 
-        tilemap.render(window.renderer, &viewport);
+        tilemap.render(window.renderer, &viewport, window);
 
         c.SDL_RenderPresent(window.renderer);
 
