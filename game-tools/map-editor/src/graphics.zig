@@ -103,10 +103,10 @@ pub const TextureMap = struct {
 };
 
 pub const Tile = struct {
-    w: u32,
-    h: u32,
-    x: u32,
-    y: u32,
+    w: i32,
+    h: i32,
+    x: i32,
+    y: i32,
     id: TileID,
     tex: ?*c.SDL_Texture,
     tex_map: *TextureMap,
@@ -122,10 +122,10 @@ pub const Tile = struct {
 
         if (!assigned) std.debug.print("hmmm: ({d}, {d})\n", .{ x, y });
         return Tile{
-            .w = w,
-            .h = h,
-            .x = x * w,
-            .y = y * h,
+            .w = @intCast(w),
+            .h = @intCast(h),
+            .x = @intCast(x * w),
+            .y = @intCast(y * h),
             .id = tile,
             .tex = tex_map.*.textures[@intFromEnum(tile)],
             .tex_map = tex_map,
@@ -231,6 +231,7 @@ pub const Tilemap = struct {
                         const id = try std.fmt.parseInt(u32, val, 10);
                         std.debug.print("id: {d}, x: {d}, y: {d}\n", .{ id, x, y });
                         try col.append(Tile.init(id, x, y, tex_map, tile_w, tile_h, true));
+                        //if (id != 0)
                         counter += 1;
                         x += 1;
                     }
@@ -245,8 +246,8 @@ pub const Tilemap = struct {
     pub fn edit_tile(self: *Tilemap, id: TileID, x: u32, y: u32) void {
         if (!self.tile_list[y][x].is_assigned) {
             std.debug.print("edit new item []\n", .{});
-            self.tile_list[y][x].x = x * self.tile_list[y][x].w;
-            self.tile_list[y][x].y = y * self.tile_list[y][x].h;
+            self.tile_list[y][x].x = @as(i32, @intCast(x)) * self.tile_list[y][x].w;
+            self.tile_list[y][x].y = @as(i32, @intCast(y)) * self.tile_list[y][x].h;
             self.tile_list[y][x].is_assigned = true;
             self.tile_list[y][x].update(id);
             return;
@@ -295,8 +296,8 @@ pub const Tilemap = struct {
         }
     }
 
-    pub fn save(self: *Tilemap) !void {
-        try export_to_file(self.filename);
+    pub fn save(self: *Tilemap, allocator: std.mem.Allocator) !void {
+        try self.export_to_file(self.filename, allocator);
     }
 
     pub fn render(self: *Tilemap, renderer: *c.SDL_Renderer, vp: *Viewport) void {
@@ -318,42 +319,29 @@ pub const Tilemap = struct {
 };
 
 pub const Viewport = struct {
-    x: u32,
-    y: u32,
-    w: u32,
-    h: u32,
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
     rect: c.SDL_Rect,
     dx: i32 = 0,
     dy: i32 = 0,
 
-    pub fn init(x: u32, y: u32, width: u32, height: u32) Viewport {
+    pub fn init(x: i32, y: i32, w: i32, h: i32) Viewport {
         return Viewport{
             .x = x,
             .y = y,
-            .w = width,
-            .h = height,
+            .w = w,
+            .h = h,
             .rect = c.SDL_Rect{
                 .x = @intCast(x),
                 .y = @intCast(y),
-                .w = @intCast(width),
-                .h = @intCast(height),
+                .w = @intCast(w),
+                .h = @intCast(h),
             },
         };
     }
-    pub fn update(self: *Viewport, destx: i32, desty: i32, max_x: i32, max_y: i32) void {
-        const xdiff = destx - @divExact(self.w, 2);
-        const ydiff = desty - @divExact(self.h, 2);
-
-        if (xdiff != self.x) {
-            const diff: i32 = @divFloor(xdiff - self.x, 3);
-            self.dx = if (self.x + diff > 0 and self.x + self.w + diff < max_x) diff else 0;
-        } else self.dx = 0;
-
-        if (ydiff != self.y) {
-            const diff = @divFloor(ydiff - self.y, 3);
-            self.dy = if (self.y + diff > 0 and self.y + self.h + diff < max_y) diff else 0;
-        } else self.dy = 0;
-
+    pub fn update(self: *Viewport) void {
         self.x += self.dx;
         self.y += self.dy;
         self.rect = c.SDL_Rect{
@@ -363,7 +351,7 @@ pub const Viewport = struct {
             .h = @as(c_int, self.h),
         };
     }
-    pub fn can_see(self: *Viewport, x: u32, y: u32, w: u32, h: u32) bool {
+    pub fn can_see(self: *Viewport, x: i32, y: i32, w: i32, h: i32) bool {
         if ((x + w > self.x or x > self.x + self.w) and (y + h > self.y or y < self.y + self.h)) return true;
         return false;
     }

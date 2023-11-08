@@ -13,7 +13,9 @@ This is currently _*very much unfinished*_ and still a WIP.
     - [x] clicking in grid to edit tiles
     - [x] draw across tiles
     - [x] delete (reset) selected tiles
-    - [ ] move camera around map (and separate window size from map size -- draw border around map)
+    - [-] move camera around map 
+        - [x] move camera
+        - [ ] and separate window size from map size -- draw border around map
     - [ ] toolbar (at side)
     - [ ] list of available textures
     - [ ] load in new textures

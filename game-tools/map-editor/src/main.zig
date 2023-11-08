@@ -79,10 +79,15 @@ pub fn main() !void {
                     'q' => {
                         quit = true;
                     },
+                    // *** TODO: ENABLE MODIFIER ***
+                    'w' => viewport.dy -= if (viewport.dy > -4) 2 else 0,
+                    'a' => viewport.dx -= if (viewport.dx > -4) 2 else 0,
                     's' => {
-                        // save to file
-                        //tilemap.save();
+                        // save to file if control is also held
+                        //try tilemap.save(alloc);
+                        viewport.dy += if (viewport.dy < 4) 2 else 0;
                     },
+                    'd' => viewport.dx += if (viewport.dx < 4) 2 else 0,
                     'e' => {
                         //export
                         try tilemap.export_to_file("assets/maps/first_export", alloc);
@@ -94,6 +99,13 @@ pub fn main() !void {
                         DrawTools.single => DrawTools.radius,
                         DrawTools.radius => DrawTools.single,
                     },
+                    else => {},
+                },
+                c.SDL_KEYUP => switch (event.key.keysym.sym) {
+                    'w' => viewport.dy = if (viewport.dy < 0) 0 else viewport.dy,
+                    's' => viewport.dy = if (viewport.dy > 0) 0 else viewport.dy,
+                    'a' => viewport.dx = if (viewport.dx > 0) 0 else viewport.dx,
+                    'd' => viewport.dx = if (viewport.dx > 0) 0 else viewport.dx,
                     else => {},
                 },
                 c.SDL_MOUSEBUTTONDOWN => switch (event.button.button) {
@@ -132,6 +144,7 @@ pub fn main() !void {
         }
 
         window.update();
+        viewport.update();
 
         window_width = window.width;
         window_height = window.height;
