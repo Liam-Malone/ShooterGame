@@ -55,7 +55,7 @@ pub const TileID = enum(u32) {
 pub const TextureMap = struct {
     textures: []?*c.SDL_Texture,
 
-    pub fn init(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: []const u8) !TextureMap {
+    pub fn init(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8) !TextureMap {
         var tex_list = std.ArrayList(?*c.SDL_Texture).init(allocator);
 
         try tex_list.append(try load_tex(allocator, renderer, path, TileID.void));
@@ -74,27 +74,58 @@ pub const TextureMap = struct {
             c.SDL_DestroyTexture(tex);
         }
     }
-    pub fn load_tex(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: []const u8, tile_id: TileID) !?*c.SDL_Texture {
-        _ = path;
-        _ = allocator;
+    // reference
+    //fn convertBack(allocator: *std.mem.Allocator, args: []const []const u8) ![*c]const [*c]const u8 {
+    //     var result = try allocator.alloc([*]const u8, args.len);
+    //     var i: usize = 0;
+    //     while (i < args.len) {
+    //         result[i] = @ptrCast(args[i].ptr);
+    //         i += 1;
+    //     }
+    //     return result.ptr;
+    //}
+
+    pub fn load_tex(allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8, tile_id: TileID) !?*c.SDL_Texture {
+        var n = try std.fmt.allocPrint(allocator, "{s}{s}", .{ path, "grass.png" });
+        defer allocator.free(n);
+
+        std.debug.print("formed str: {s}\n", .{n});
+        std.debug.print("type of formed str is: {any}\n", .{@TypeOf(n)});
+        const str: *const [:0]u8 = @alignCast(@ptrCast(n));
+
+        var tmp = try allocator.alloc(u8, n.len + 1);
+        defer allocator.free(tmp);
+        var i: usize = 0;
+        while (i <= n.len - 1) {
+            tmp[i] = n[i];
+            i += 1;
+        }
+        tmp[n.len] = 0;
+
+        const tmp_str = tmp[0..n.len :0];
+        std.debug.print("type of tmp_str is: {any}\n", .{@TypeOf(tmp_str)});
+        std.debug.print("tmp_str is: {s}\n", .{tmp_str});
         var tex: ?*c.SDL_Texture = null;
-        const default_path = TEX_PATH ++ "no_text.png";
+        const default_path = TEX_PATH ++ "no_tex.png";
+        std.debug.print("type of default: {any}\n", .{@TypeOf(default_path)});
+        std.debug.print("formed and cast str is: {s}\n", .{str});
+        std.debug.print("type of formed and cast str is: {any}\n", .{@TypeOf(str)});
         switch (tile_id) {
             .void => {
-                tex = c.IMG_LoadTexture(renderer, default_path);
+                tex = c.IMG_LoadTexture(renderer, @ptrCast(str)) orelse c.IMG_LoadTexture(renderer, default_path);
                 std.debug.print("texture: {any}\n\n", .{tex});
             },
             .grass => {
                 const tex_path = TEX_PATH ++ "grass.png";
                 std.debug.print("loading tex {any} from path: {s}\n", .{ TileID.void, tex_path });
-                tex = c.IMG_LoadTexture(renderer, tex_path) orelse c.IMG_LoadTexture(renderer, default_path);
+                tex = c.IMG_LoadTexture(renderer, @ptrCast(tmp_str)) orelse c.IMG_LoadTexture(renderer, default_path);
                 std.debug.print("texture: {any}\n\n", .{tex});
             },
             else => {
                 std.debug.print("FIX ME\n", .{});
                 const tex_path = default_path;
                 std.debug.print("loading tex {any} from path: {s}\n", .{ TileID.void, tex_path });
-                tex = c.IMG_LoadTexture(renderer, tex_path);
+                tex = c.IMG_LoadTexture(renderer, tex_path) orelse c.IMG_LoadTexture(renderer, default_path);
             },
         }
         if (tex != null) std.debug.print("no tex\n", .{});
@@ -229,7 +260,7 @@ pub const Tilemap = struct {
                 while (iter_col.next()) |val| {
                     if (val.len > 0) {
                         const id = try std.fmt.parseInt(u32, val, 10);
-                        std.debug.print("id: {d}, x: {d}, y: {d}\n", .{ id, x, y });
+                        //std.debug.print("id: {d}, x: {d}, y: {d}\n", .{ id, x, y });
                         try col.append(Tile.init(id, x, y, tex_map, tile_w, tile_h, true));
                         //if (id != 0)
                         counter += 1;
@@ -239,8 +270,8 @@ pub const Tilemap = struct {
                 y += 1;
                 try map.append(try col.toOwnedSlice());
             }
-            std.debug.print("counted\texpected\n{d}\t{d}\n", .{ counter, arr_len });
         }
+        std.debug.print("counted\texpected\n{d}\t{d}\n", .{ counter, arr_len });
         return try map.toOwnedSlice();
     }
     pub fn edit_tile(self: *Tilemap, id: TileID, x: u32, y: u32) void {

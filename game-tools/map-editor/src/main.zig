@@ -63,7 +63,7 @@ pub fn main() !void {
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var alloc = gpa.allocator();
-    var tex_map = try TextureMap.init(alloc, window.renderer, TEXTURE_PATH);
+    var tex_map = try TextureMap.init(alloc, window.renderer, @constCast(@ptrCast("assets/textures/")));
     defer tex_map.deinit();
     var tilemap = try Tilemap.init("assets/maps/first_export", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, window);
 
@@ -89,7 +89,8 @@ pub fn main() !void {
                     },
                     'd' => viewport.dx += if (viewport.dx < 4) 2 else 0,
                     'e' => {
-                        //export
+                        // export
+                        // need to add code to let user select output file
                         try tilemap.export_to_file("assets/maps/first_export", alloc);
                     },
                     '0' => selected_id = TileID.void,
