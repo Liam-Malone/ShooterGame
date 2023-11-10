@@ -35,5 +35,5 @@
 ### Delayed Priority
 
 - [ ] embed tilemap editor into main build
-    - will use build flags to determine existence or not in binary
+    - add build step to check env var for building in tilemap editing -- heavy comptime use
 - [ ] save game and load from saves -- I'm dreading figuring this out
