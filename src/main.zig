@@ -141,6 +141,7 @@ pub fn main() !void {
         set_render_color(window.renderer, Color.make_sdl_color(BACKGROUND_COLOR));
         _ = c.SDL_RenderClear(window.renderer);
 
+        // *** TODO: BREAK AND RE-IMPLEMENT ***
         viewport.update(@intFromFloat(player.x), @intFromFloat(player.y), WORLD_WIDTH, WORLD_HEIGHT);
         map.render(window.renderer, &viewport);
 
