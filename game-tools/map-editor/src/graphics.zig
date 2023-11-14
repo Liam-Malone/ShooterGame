@@ -240,14 +240,11 @@ pub const Tilemap = struct {
                 while (iter_col.next()) |val| {
                     if (val.len > 0) {
                         const id = try std.fmt.parseInt(u32, val, 10);
-                        //std.debug.print("id: {d}, x: {d}, y: {d}\n", .{ id, x, y });
                         try col.append(Tile.init(id, x, y, tex_map, tile_w, tile_h, true));
-                        //if (id != 0)
                         counter += 1;
                         x += 1;
                     }
                 }
-                // need to adjust to world size instead of window / predefined map
                 y += 1;
                 try map.append(try col.toOwnedSlice());
             }
@@ -284,10 +281,10 @@ pub const Tilemap = struct {
     // create file if it does not exist //
     //**********************************//
     pub fn export_to_file(self: *Tilemap, output_file: []const u8, allocator: std.mem.Allocator) !void {
-        var file = try std.fs.cwd().openFile(
+        var file = std.fs.cwd().openFile(
             output_file,
             .{ .mode = std.fs.File.OpenMode.write_only },
-        );
+        ) catch try std.fs.cwd().createFile(output_file, .{});
         defer file.close();
         for (self.tile_list, 0..) |col, y| {
             for (col, 0..) |tile, x| {
@@ -302,10 +299,10 @@ pub const Tilemap = struct {
                 if (tile_string != null) {
                     defer allocator.free(tile_string.?);
                     std.debug.print("writing {s} to file\n", .{tile_string.?});
-                    _ = try file.write(tile_string.?); // catch {} *** TODO *** create and write on NotFound
+                    _ = try file.write(tile_string.?);
                 }
             }
-            _ = try file.write("\n"); // catch {}
+            _ = try file.write("\n");
         }
     }
 
@@ -321,17 +318,6 @@ pub const Tilemap = struct {
                 self.tile_list[i][j].render(renderer, vp);
             }
         }
-        // draw grid here
-        //var x: i32 = 0;
-        //var y: i32 = 0;
-        //while (x < window.width) {
-        //    _ = c.SDL_RenderDrawLine(renderer, x - vp.x, 0 - vp.y, x - vp.x, @as(i32, @intCast(window.height)) - vp.y);
-        //    x += self.tile_list[0][0].w;
-        //}
-        //while (y < window.height) {
-        //    _ = c.SDL_RenderDrawLine(renderer, 0 - vp.x, y - vp.y, @as(i32, @intCast(window.width)) - vp.x, y - vp.y);
-        //    y += self.tile_list[0][0].h;
-        //}
     }
 
     // debug purposes
