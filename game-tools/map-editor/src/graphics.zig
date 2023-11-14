@@ -292,21 +292,23 @@ pub const Tilemap = struct {
                 var tile_string: ?[]const u8 = null;
                 if (x + 1 == self.tile_list[y].len) {
                     tile_string = try std.fmt.allocPrint(allocator, "{d}", .{@intFromEnum(tile.id)});
-                    std.debug.print("tile x: {d}, tile y: {d}\n", .{ tile.x, tile.y });
+                    //std.debug.print("tile x: {d}, tile y: {d}\n", .{ tile.x, tile.y });
                 } else {
                     tile_string = try std.fmt.allocPrint(allocator, "{d} ", .{@intFromEnum(tile.id)});
-                    std.debug.print("tile x: {d}, tile y: {d}\ntile id: {any}", .{ tile.x, tile.y, tile.id });
+                    //std.debug.print("tile x: {d}, tile y: {d}\ntile id: {any}", .{ tile.x, tile.y, tile.id });
                 }
 
                 // need to multithread
                 if (tile_string) |ts| {
                     defer allocator.free(ts);
-                    std.debug.print("writing {s} to file\n", .{ts});
+                    //std.debug.print("writing {s} to file\n", .{ts});
                     _ = try file.write(ts);
                 }
             }
             _ = try file.write("\n");
         }
+        const stdout = std.io.getStdOut().writer();
+        try stdout.print("File export completed\n", .{});
     }
 
     pub fn save(self: *Tilemap, allocator: std.mem.Allocator) !void {
