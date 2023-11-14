@@ -91,9 +91,13 @@ pub fn main() !void {
                     },
                     'd' => viewport.dx += if (viewport.dx < 4) 2 else 0,
                     'e' => {
-                        // export
-                        // need to add code to let user select output file
-                        try tilemap.export_to_file("assets/maps/first_export", alloc);
+                        // need to edit to let user select output file
+                        if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
+                            std.debug.print("CONTROL HIT\n", .{});
+                            try tilemap.export_to_file("assets/maps/first_export", alloc);
+                        } else {
+                            // do something else, I guess
+                        }
                     },
                     '0' => selected_id = TileID.void,
                     '1' => selected_id = TileID.grass,

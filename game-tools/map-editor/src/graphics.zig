@@ -296,6 +296,7 @@ pub const Tilemap = struct {
                     tile_string = try std.fmt.allocPrint(allocator, "{d} ", .{@intFromEnum(tile.id)});
                     std.debug.print("tile x: {d}, tile y: {d}\ntile id: {any}", .{ tile.x, tile.y, tile.id });
                 }
+
                 if (tile_string != null) {
                     defer allocator.free(tile_string.?);
                     std.debug.print("writing {s} to file\n", .{tile_string.?});
