@@ -86,14 +86,16 @@ pub fn main() !void {
                     'a' => viewport.dx -= if (viewport.dx > -4) 2 else 0,
                     's' => {
                         // save to file if control is also held
-                        //try tilemap.save(alloc);
-                        viewport.dy += if (viewport.dy < 4) 2 else 0;
+                        if (event.key.keysym.mod & c.KMOD_CTRL == 0) {
+                            viewport.dy += if (viewport.dy < 4) 2 else 0;
+                        } else {
+                            try tilemap.save(alloc);
+                        }
                     },
                     'd' => viewport.dx += if (viewport.dx < 4) 2 else 0,
                     'e' => {
                         // need to edit to let user select output file
                         if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
-                            std.debug.print("CONTROL HIT\n", .{});
                             try tilemap.export_to_file("assets/maps/first_export", alloc);
                         } else {
                             // do something else, I guess
