@@ -101,6 +101,14 @@ pub fn main() !void {
                             // do something else, I guess
                         }
                     },
+                    'n' => {
+                        if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
+                            // prompt for creating new tilemap
+                            // include: map dimension options
+                        } else {
+                            // some other use
+                        }
+                    },
                     '0' => selected_id = TileID.void,
                     '1' => selected_id = TileID.grass,
                     '2' => selected_id = TileID.stone,
@@ -125,7 +133,7 @@ pub fn main() !void {
                         const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
                         switch (selected_tool) {
                             DrawTools.single => place_at_pos(x, y, &tilemap),
-                            DrawTools.radius => brush(x, y, 4, &tilemap),
+                            DrawTools.radius => brush(x, y, 8, &tilemap),
                         }
                         left_mouse_is_down = true;
                     },

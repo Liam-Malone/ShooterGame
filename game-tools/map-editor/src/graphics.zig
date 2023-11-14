@@ -46,8 +46,8 @@ const DisplayMode = enum {
 pub const TileID = enum(u32) {
     void = 0,
     grass = 1,
-    dirt = 2,
-    stone = 3,
+    stone = 2,
+    dirt = 3,
     wood = 4,
     leaves = 5,
 };
@@ -60,8 +60,8 @@ pub const TextureMap = struct {
 
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.void));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.grass));
-        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.dirt));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.stone));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.dirt));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.wood));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.leaves));
 
@@ -127,7 +127,8 @@ pub const Tile = struct {
         const tile = switch (id) {
             0 => TileID.void,
             1 => TileID.grass,
-            2 => TileID.dirt,
+            2 => TileID.stone,
+            3 => TileID.dirt,
             else => TileID.void,
         };
 
@@ -297,10 +298,11 @@ pub const Tilemap = struct {
                     std.debug.print("tile x: {d}, tile y: {d}\ntile id: {any}", .{ tile.x, tile.y, tile.id });
                 }
 
-                if (tile_string != null) {
-                    defer allocator.free(tile_string.?);
-                    std.debug.print("writing {s} to file\n", .{tile_string.?});
-                    _ = try file.write(tile_string.?);
+                // need to multithread
+                if (tile_string) |ts| {
+                    defer allocator.free(ts);
+                    std.debug.print("writing {s} to file\n", .{ts});
+                    _ = try file.write(ts);
                 }
             }
             _ = try file.write("\n");
