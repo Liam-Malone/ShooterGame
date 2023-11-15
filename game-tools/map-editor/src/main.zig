@@ -3,8 +3,7 @@ const graphics = @import("graphics.zig");
 const gui = @import("gui.zig");
 const c = @import("c.zig");
 
-const Overlay = gui.Overlay;
-const Button = gui.Overlay.Button;
+const Button = gui.Button;
 
 const Color = graphics.Color;
 const TextureMap = graphics.TextureMap;
@@ -62,6 +61,12 @@ fn save(tm: *Tilemap, alloc: std.mem.Allocator) !void {
 fn select_water() void {
     selected_id = TileID.water;
 }
+fn select_grass() void {
+    selected_id = TileID.grass;
+}
+fn select_stone() void {
+    selected_id = TileID.stone;
+}
 
 var selected_id: TileID = TileID.grass;
 var selected_tool = DrawTools.single;
@@ -83,7 +88,9 @@ pub fn main() !void {
     defer tex_map.deinit();
     var tilemap: Tilemap = try Tilemap.init("assets/maps/next_test", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
 
-    const button: Button = Button.init(100, 100, 50, 50, select_water);
+    const water_button: Button = Button.init(30, 100, 30, 30, Color.blue, select_water);
+    const grass_button: Button = Button.init(60, 100, 30, 30, Color.green, select_grass);
+    const stone_button: Button = Button.init(30, 130, 30, 30, Color.stone, select_stone);
 
     //var thread_pool: [THREAD_COUNT]std.Thread = undefined;
     //_ = thread_pool;
@@ -151,7 +158,9 @@ pub fn main() !void {
                     c.SDL_BUTTON_LEFT => {
                         // use current tool
                         // *** TODO: need to fix logic for differing camera positoins ***
-                        _ = button.click(@intCast(event.button.x), @intCast(event.button.y));
+                        _ = water_button.click(@intCast(event.button.x), @intCast(event.button.y));
+                        _ = grass_button.click(@intCast(event.button.x), @intCast(event.button.y));
+                        _ = stone_button.click(@intCast(event.button.x), @intCast(event.button.y));
                         const x = if (event.button.x + viewport.x > 0) @as(u32, @intCast(event.button.x + viewport.x)) else 0;
                         const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
                         switch (selected_tool) {
@@ -198,7 +207,9 @@ pub fn main() !void {
         _ = c.SDL_RenderClear(window.renderer);
 
         tilemap.render(window.renderer, &viewport, window);
-        button.render(window.renderer);
+        grass_button.render(window.renderer);
+        stone_button.render(window.renderer);
+        water_button.render(window.renderer);
 
         c.SDL_RenderPresent(window.renderer);
 

@@ -14,7 +14,8 @@ pub const Color = enum(u32) {
     purple = 0x7BF967AA,
     red = 0xFC1A17CC,
     dark_gray = 0x181818FF,
-    grass = 0x00AA00FF,
+    blue = 0x0000CCFF,
+    green = 0x00AA00FF,
     dirt = 0x3C2414AA,
     wood = 0x22160B88,
     stone = 0x7F7F98AA,
@@ -176,7 +177,7 @@ pub const Tile = struct {
     pub fn get_color(self: *Tile) Color {
         var col: Color = undefined;
         switch (self.id) {
-            TileID.grass => col = Color.grass,
+            TileID.grass => col = Color.green,
             TileID.dirt => col = Color.dirt,
             TileID.wood => col = Color.wood,
             TileID.stone => col = Color.stone,
@@ -556,7 +557,7 @@ pub const Window = struct {
     }
 };
 
-fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
+pub fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
 
