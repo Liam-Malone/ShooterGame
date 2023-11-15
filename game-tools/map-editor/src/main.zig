@@ -37,8 +37,8 @@ fn brush(x: u32, y: u32, r: u32, tilemap: *Tilemap) void {
     while (a < ir) {
         const min_xval: u32 = @intCast(@max(ix - a, 0));
         const min_yval: u32 = @intCast(@max(iy - a, 0));
-        const max_xval: u32 = @intCast(@min(ix - a, max_x));
-        const max_yval: u32 = @intCast(@min(iy - a, max_y));
+        const max_xval: u32 = @intCast(@min(ix + a, max_x));
+        const max_yval: u32 = @intCast(@min(iy + a, max_y));
 
         if (min_xval == 0 or min_yval == 0 or max_xval == max_x or max_yval == max_y) return;
         place_at_pos(min_xval, min_yval, tilemap);
@@ -123,6 +123,7 @@ pub fn main() !void {
                     '0' => selected_id = TileID.void,
                     '1' => selected_id = TileID.grass,
                     '2' => selected_id = TileID.stone,
+                    '3' => selected_id = TileID.water,
                     ' ' => selected_tool = switch (selected_tool) {
                         DrawTools.single => DrawTools.radius,
                         DrawTools.radius => DrawTools.single,

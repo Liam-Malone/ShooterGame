@@ -47,9 +47,10 @@ pub const TileID = enum(u32) {
     void = 0,
     grass = 1,
     stone = 2,
-    dirt = 3,
+    water = 3,
     wood = 4,
-    leaves = 5,
+    dirt = 5,
+    leaves = 6,
 };
 
 pub const TextureMap = struct {
@@ -61,8 +62,9 @@ pub const TextureMap = struct {
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.void));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.grass));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.stone));
-        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.dirt));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.water));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.wood));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.dirt));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.leaves));
 
         return TextureMap{
@@ -91,9 +93,11 @@ pub const TextureMap = struct {
         var tex_path: []u8 = undefined;
         switch (tile_id) {
             .void => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "no_tex.png" }),
-            .grass => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "grass.png" }),
+            .grass => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "grass-tex.png" }),
             .stone => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "basic-stone.png" }),
-            .dirt, .wood, .leaves => {
+            .water => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "water-tex.png" }),
+            .dirt => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "dirt-tex.png" }),
+            .wood, .leaves => {
                 std.debug.print("*** TODO: add texture for {any} *** \n", .{tile_id});
                 tex_path = default_tex_path;
             },
