@@ -79,6 +79,7 @@ pub fn main() !void {
         gui.Button.init(30, 100, 30, 30, Color.blue, gui.ButtonID.SelectWater),
         gui.Button.init(60, 100, 30, 30, Color.green, gui.ButtonID.SelectGrass),
         gui.Button.init(30, 130, 30, 30, Color.stone, gui.ButtonID.SelectStone),
+        gui.Button.init(60, 130, 30, 30, Color.dirt, gui.ButtonID.SelectDirt),
     };
 
     var clicked_button = false;
