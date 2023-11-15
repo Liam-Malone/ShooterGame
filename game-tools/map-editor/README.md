@@ -16,8 +16,10 @@ This is currently _*very much unfinished*_ and still a WIP.
     - [-] move camera around map 
         - [x] move camera
         - [ ] and separate window size from map size -- draw border around map
-    - [ ] toolbar (at side)
-    - [ ] list of available textures
+    - [-] toolbar (at side)
+        - [x] texture selection buttons
+        - [ ] tool options
+    - [x] list of available textures
     - [ ] load in new textures
     - [ ] option to select output file
     - [ ] option to create new map of desired size
