@@ -28,7 +28,6 @@ fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
 
-// partially in -- implement radius paint
 fn brush(x: u32, y: u32, r: u32, tilemap: *Tilemap) void {
     var ix: i32 = @intCast(x);
     var iy: i32 = @intCast(y);
@@ -58,16 +57,6 @@ fn save(tm: *Tilemap, alloc: std.mem.Allocator) !void {
     try tm.save(alloc);
 }
 
-fn select_water() void {
-    selected_id = TileID.water;
-}
-fn select_grass() void {
-    selected_id = TileID.grass;
-}
-fn select_stone() void {
-    selected_id = TileID.stone;
-}
-
 var selected_id: TileID = TileID.grass;
 var selected_tool = DrawTools.single;
 
@@ -88,25 +77,11 @@ pub fn main() !void {
     defer tex_map.deinit();
     var tilemap: Tilemap = try Tilemap.init("assets/maps/next_test", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
 
-    //const water_button: Button = Button.init(30, 100, 30, 30, Color.blue, select_water);
-    //const grass_button: Button = Button.init(60, 100, 30, 30, Color.green, select_grass);
-    //const stone_button: Button = Button.init(30, 130, 30, 30, Color.stone, select_stone);
-
-    //comptime var buttons: [3]Button = undefined;
-    const buttons = [3]Button{
-        Button.init(30, 100, 30, 30, Color.blue, select_water),
-        Button.init(60, 100, 30, 30, Color.green, select_grass),
-        Button.init(30, 130, 30, 30, Color.stone, select_stone),
-    };
-    _ = buttons;
     const dumb_buttons = [_]gui.DumbButton{
         gui.DumbButton.init(30, 100, 30, 30, Color.blue, gui.DumbButtonID.SelectWater),
         gui.DumbButton.init(60, 100, 30, 30, Color.green, gui.DumbButtonID.SelectGrass),
         gui.DumbButton.init(30, 130, 30, 30, Color.stone, gui.DumbButtonID.SelectStone),
     };
-
-    //var thread_pool: [THREAD_COUNT]std.Thread = undefined;
-    //_ = thread_pool;
 
     var clicked_button = false;
     var left_mouse_is_down = false;
@@ -121,7 +96,6 @@ pub fn main() !void {
                     'q' => {
                         quit = true;
                     },
-                    // *** TODO: ENABLE MODIFIER ***
                     'w' => viewport.dy -= if (viewport.dy > -4) 2 else 0,
                     'a' => viewport.dx -= if (viewport.dx > -4) 2 else 0,
                     's' => {
@@ -136,7 +110,6 @@ pub fn main() !void {
                     'e' => {
                         // need to edit to let user select output file
                         if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
-                            //try tilemap.export_to_file("assets/maps/first_export", alloc);
                             var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc });
                             t.detach();
                         } else {
@@ -170,8 +143,6 @@ pub fn main() !void {
                 },
                 c.SDL_MOUSEBUTTONDOWN => switch (event.button.button) {
                     c.SDL_BUTTON_LEFT => {
-                        // use current tool
-                        // *** TODO: need to fix logic for differing camera positoins ***
                         for (dumb_buttons) |btn| {
                             if (btn.click(@intCast(event.button.x), @intCast(event.button.y))) |id| {
                                 switch (id) {
@@ -183,9 +154,6 @@ pub fn main() !void {
                                 clicked_button = true;
                             }
                         }
-                        //_ = water_button.click(@intCast(event.button.x), @intCast(event.button.y));
-                        //_ = grass_button.click(@intCast(event.button.x), @intCast(event.button.y));
-                        //_ = stone_button.click(@intCast(event.button.x), @intCast(event.button.y));
                         if (!clicked_button) {
                             const x = if (event.button.x + viewport.x > 0) @as(u32, @intCast(event.button.x + viewport.x)) else 0;
                             const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
@@ -207,7 +175,6 @@ pub fn main() !void {
                 },
                 c.SDL_MOUSEMOTION => switch (left_mouse_is_down) {
                     true => {
-                        // *** TODO: need to fix logic for differing camera positoins ***
                         const x = if (event.button.x + viewport.x > 0) @as(u32, @intCast(event.button.x + viewport.x)) else 0;
                         const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
                         switch (selected_tool) {
@@ -238,8 +205,6 @@ pub fn main() !void {
         for (dumb_buttons) |btn| {
             btn.render(window.renderer);
         }
-
-        //buttons[1].render(window.renderer);
 
         c.SDL_RenderPresent(window.renderer);
 

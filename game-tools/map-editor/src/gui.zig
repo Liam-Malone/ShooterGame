@@ -75,7 +75,6 @@ pub const DumbButton = struct {
     }
 
     pub fn render(self: *const DumbButton, renderer: *c.SDL_Renderer) void {
-        // render tile
         graphics.set_render_color(renderer, graphics.Color.make_sdl_color(self.color));
         _ = c.SDL_RenderFillRect(renderer, &self.rect);
     }
@@ -116,7 +115,6 @@ pub const Button = struct {
     }
 
     pub fn render(comptime self: *const Button, renderer: *c.SDL_Renderer) void {
-        // render tile
         graphics.set_render_color(renderer, graphics.Color.make_sdl_color(self.color));
         _ = c.SDL_RenderFillRect(renderer, &self.rect);
     }

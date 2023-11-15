@@ -158,7 +158,6 @@ pub const Tile = struct {
 
     pub fn render(self: *Tile, renderer: *c.SDL_Renderer, vp: *Viewport) void {
         if (vp.can_see(self.x, self.y, self.w, self.h)) {
-            // render tile
             const rect = c.SDL_Rect{
                 .x = @intCast(self.x - vp.x),
                 .y = @intCast(self.y - vp.y),
@@ -220,7 +219,7 @@ pub const Tilemap = struct {
     //**********************************//
     fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, world_width: u32, world_height: u32) ![][]Tile {
         const arr_len = (world_width / tile_w) * (world_height / tile_h);
-        var map = std.ArrayList([]Tile).init(allocator); // freed on return
+        var map = std.ArrayList([]Tile).init(allocator); // caller needs to free on return
         const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 855000);
         defer allocator.free(data);
 
@@ -300,16 +299,12 @@ pub const Tilemap = struct {
                 var tile_string: ?[]const u8 = null;
                 if (x + 1 == self.tile_list[y].len) {
                     tile_string = try std.fmt.allocPrint(allocator, "{d}", .{@intFromEnum(tile.id)});
-                    //std.debug.print("tile x: {d}, tile y: {d}\n", .{ tile.x, tile.y });
                 } else {
                     tile_string = try std.fmt.allocPrint(allocator, "{d} ", .{@intFromEnum(tile.id)});
-                    //std.debug.print("tile x: {d}, tile y: {d}\ntile id: {any}", .{ tile.x, tile.y, tile.id });
                 }
 
-                // need to multithread
                 if (tile_string) |ts| {
                     defer allocator.free(ts);
-                    //std.debug.print("writing {s} to file\n", .{ts});
                     _ = try file.write(ts);
                 }
             }
