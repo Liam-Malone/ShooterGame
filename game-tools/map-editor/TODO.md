@@ -3,6 +3,7 @@
 ### UI Stuff:
 
 - [ ] clickable ui -- tool selection, save to file..
+- [ ] figure out dynamic buttons... constructed with fn
 - [x] make file export run on a separate thread
 - [ ] read files of unknown size
 - [ ] read file in on separate thread(?) -- maybe
