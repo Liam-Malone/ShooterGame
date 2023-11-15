@@ -88,13 +88,27 @@ pub fn main() !void {
     defer tex_map.deinit();
     var tilemap: Tilemap = try Tilemap.init("assets/maps/next_test", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
 
-    const water_button: Button = Button.init(30, 100, 30, 30, Color.blue, select_water);
-    const grass_button: Button = Button.init(60, 100, 30, 30, Color.green, select_grass);
-    const stone_button: Button = Button.init(30, 130, 30, 30, Color.stone, select_stone);
+    //const water_button: Button = Button.init(30, 100, 30, 30, Color.blue, select_water);
+    //const grass_button: Button = Button.init(60, 100, 30, 30, Color.green, select_grass);
+    //const stone_button: Button = Button.init(30, 130, 30, 30, Color.stone, select_stone);
+
+    //comptime var buttons: [3]Button = undefined;
+    const buttons = [3]Button{
+        Button.init(30, 100, 30, 30, Color.blue, select_water),
+        Button.init(60, 100, 30, 30, Color.green, select_grass),
+        Button.init(30, 130, 30, 30, Color.stone, select_stone),
+    };
+    _ = buttons;
+    const dumb_buttons = [_]gui.DumbButton{
+        gui.DumbButton.init(30, 100, 30, 30, Color.blue, gui.DumbButtonID.SelectWater),
+        gui.DumbButton.init(60, 100, 30, 30, Color.green, gui.DumbButtonID.SelectGrass),
+        gui.DumbButton.init(30, 130, 30, 30, Color.stone, gui.DumbButtonID.SelectStone),
+    };
 
     //var thread_pool: [THREAD_COUNT]std.Thread = undefined;
     //_ = thread_pool;
 
+    var clicked_button = false;
     var left_mouse_is_down = false;
     while (!quit) {
         var event: c.SDL_Event = undefined;
@@ -158,22 +172,36 @@ pub fn main() !void {
                     c.SDL_BUTTON_LEFT => {
                         // use current tool
                         // *** TODO: need to fix logic for differing camera positoins ***
-                        _ = water_button.click(@intCast(event.button.x), @intCast(event.button.y));
-                        _ = grass_button.click(@intCast(event.button.x), @intCast(event.button.y));
-                        _ = stone_button.click(@intCast(event.button.x), @intCast(event.button.y));
-                        const x = if (event.button.x + viewport.x > 0) @as(u32, @intCast(event.button.x + viewport.x)) else 0;
-                        const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
-                        switch (selected_tool) {
-                            DrawTools.single => place_at_pos(x, y, &tilemap),
-                            DrawTools.radius => brush(x, y, 8, &tilemap),
+                        for (dumb_buttons) |btn| {
+                            if (btn.click(@intCast(event.button.x), @intCast(event.button.y))) |id| {
+                                switch (id) {
+                                    .SelectStone => selected_id = graphics.TileID.stone,
+                                    .SelectGrass => selected_id = graphics.TileID.grass,
+                                    .SelectWater => selected_id = graphics.TileID.water,
+                                    .SelectDirt => selected_id = graphics.TileID.dirt,
+                                }
+                                clicked_button = true;
+                            }
                         }
-                        left_mouse_is_down = true;
+                        //_ = water_button.click(@intCast(event.button.x), @intCast(event.button.y));
+                        //_ = grass_button.click(@intCast(event.button.x), @intCast(event.button.y));
+                        //_ = stone_button.click(@intCast(event.button.x), @intCast(event.button.y));
+                        if (!clicked_button) {
+                            const x = if (event.button.x + viewport.x > 0) @as(u32, @intCast(event.button.x + viewport.x)) else 0;
+                            const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
+                            switch (selected_tool) {
+                                DrawTools.single => place_at_pos(x, y, &tilemap),
+                                DrawTools.radius => brush(x, y, 8, &tilemap),
+                            }
+                            left_mouse_is_down = true;
+                        }
                     },
                     else => {},
                 },
                 c.SDL_MOUSEBUTTONUP => switch (event.button.button) {
                     c.SDL_BUTTON_LEFT => {
                         left_mouse_is_down = false;
+                        clicked_button = false;
                     },
                     else => {},
                 },
@@ -207,9 +235,11 @@ pub fn main() !void {
         _ = c.SDL_RenderClear(window.renderer);
 
         tilemap.render(window.renderer, &viewport, window);
-        grass_button.render(window.renderer);
-        stone_button.render(window.renderer);
-        water_button.render(window.renderer);
+        for (dumb_buttons) |btn| {
+            btn.render(window.renderer);
+        }
+
+        //buttons[1].render(window.renderer);
 
         c.SDL_RenderPresent(window.renderer);
 

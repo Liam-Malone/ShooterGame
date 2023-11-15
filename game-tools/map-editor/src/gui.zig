@@ -34,6 +34,53 @@ pub const Toolbar = struct {
     }
 };
 
+pub const DumbButtonID = enum {
+    SelectWater,
+    SelectGrass,
+    SelectDirt,
+    SelectStone,
+};
+
+pub const DumbButton = struct {
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+    color: graphics.Color,
+    rect: c.SDL_Rect,
+    id: DumbButtonID,
+
+    pub fn init(x: u32, y: u32, w: u32, h: u32, color: graphics.Color, id: DumbButtonID) DumbButton {
+        return DumbButton{
+            .x = x,
+            .y = y,
+            .w = w,
+            .h = h,
+            .color = color,
+            .id = id,
+            .rect = c.SDL_Rect{
+                .x = @intCast(x),
+                .y = @intCast(y),
+                .w = @intCast(w),
+                .h = @intCast(h),
+            },
+        };
+    }
+    pub fn click(self: *const DumbButton, x: u32, y: u32) ?DumbButtonID {
+        if (x >= self.x and x <= self.x + self.w and y >= self.y and y <= self.y + self.h) {
+            return self.id;
+        } else {
+            return null;
+        }
+    }
+
+    pub fn render(self: *const DumbButton, renderer: *c.SDL_Renderer) void {
+        // render tile
+        graphics.set_render_color(renderer, graphics.Color.make_sdl_color(self.color));
+        _ = c.SDL_RenderFillRect(renderer, &self.rect);
+    }
+};
+
 pub const Button = struct {
     x: u32,
     y: u32,
