@@ -6,11 +6,15 @@ This thing is really just something for me to toy with 2d game dev stuff.
 
 > I have no idea how far I'll be taking this
 
+## IMPORTANT NOTE:
+
+I have made many changes to the map-related code within the game-tools/map-editor subdirectory that are not yet implemented in the main game code.
+To run the map editor, you can compile and run it from the game-tools/map-editor directory
+
 ## Getting Started
 
 If you want to play this (I must warn, it's not really in a playable state yet) you can compile it and run it for yourself.
 
-> NOTE: I have made many changes to the map-related code within the game-tools/map-editor subdirectory that are not yet implemented here in the main game code.
 
 ### Build From Source
 
