@@ -38,8 +38,6 @@ pub const SoundEffect = struct {
                 const new_time = std.time.milliTimestamp();
                 if (new_time - 800 >= self.timestamp) {
                     self.timestamp = new_time;
-
-                    std.debug.print("\n\n    playing sound effect:\n{any}    \n\n", .{self.effect});
                     _ = c.Mix_PlayChannel(-1, self.effect, 0);
                 }
             },

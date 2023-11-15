@@ -91,7 +91,6 @@ pub const TextureMap = struct {
             i += 1;
         }
         const default_path = tmp_def[0..default_tex_path.len :0];
-        std.debug.print("type of default: {any}\n", .{@TypeOf(default_path)});
 
         var tex_path: []u8 = undefined;
         switch (tile_id) {
