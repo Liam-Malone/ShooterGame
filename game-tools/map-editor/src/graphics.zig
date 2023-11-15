@@ -132,7 +132,8 @@ pub const Tile = struct {
             0 => TileID.void,
             1 => TileID.grass,
             2 => TileID.stone,
-            3 => TileID.dirt,
+            3 => TileID.water,
+            4 => TileID.dirt,
             else => TileID.void,
         };
 
@@ -153,6 +154,7 @@ pub const Tile = struct {
         self.tex = self.tex_map.*.textures[@intFromEnum(id)];
         std.debug.print("new tex w id: {any}\n", .{id});
     }
+
     pub fn render(self: *Tile, renderer: *c.SDL_Renderer, vp: *Viewport) void {
         if (vp.can_see(self.x, self.y, self.w, self.h)) {
             // render tile
@@ -170,6 +172,7 @@ pub const Tile = struct {
             if (self.tex) |tex| _ = c.SDL_RenderCopy(renderer, tex, null, &rect);
         }
     }
+
     pub fn get_color(self: *Tile) Color {
         var col: Color = undefined;
         switch (self.id) {
