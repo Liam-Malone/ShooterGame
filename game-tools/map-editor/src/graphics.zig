@@ -216,6 +216,13 @@ pub const Tilemap = struct {
     //  enable allocation of correctly  //
     //  sized buffers depending on      //
     //  the size of the map file        //
+    //                                  //
+    //  ------------------------------  //
+    //       *** ==> TODO <== ***       //
+    //                                  //
+    //  enable passing of new files     //
+    //  open read-only? create if fail? //
+    //                                  //
     //**********************************//
     fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, world_width: u32, world_height: u32) ![][]Tile {
         const arr_len = (world_width / tile_w) * (world_height / tile_h);

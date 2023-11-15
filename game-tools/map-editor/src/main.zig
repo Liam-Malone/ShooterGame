@@ -69,11 +69,19 @@ pub fn main() !void {
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var alloc = gpa.allocator();
+
+    // CLI ARGS
+    const args = try std.process.argsAlloc(alloc);
+    defer std.process.argsFree(alloc, args);
+
+    const map_file = if (args.len > 1) args[1] else "assets/maps/next_test";
+
     var arena = std.heap.ArenaAllocator.init(alloc);
     var arena_alloc = arena.allocator();
+
     var tex_map = try TextureMap.init(alloc, arena_alloc, window.renderer, @constCast(@ptrCast("assets/textures/")));
     defer tex_map.deinit();
-    var tilemap: Tilemap = try Tilemap.init("assets/maps/next_test", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
+    var tilemap: Tilemap = try Tilemap.init(map_file, alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
 
     const dumb_buttons = [_]gui.Button{
         gui.Button.init(30, 100, 30, 30, Color.blue, gui.ButtonID.SelectWater),
