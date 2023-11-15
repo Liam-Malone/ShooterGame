@@ -6,6 +6,8 @@ This is currently _*very much unfinished*_ and still a WIP.
 
 > This will be in its own standalone repo when I'm happier with the state of it
 
+>> As with the main game code, I have yet to test actually compiling on Windows
+
 ## DESIRED FEATURES:
 
 - [x] load and display map (very simple format) in tile-grid
