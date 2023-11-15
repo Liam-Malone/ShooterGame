@@ -19,6 +19,8 @@ const WORLD_HEIGHT = 2800;
 const TILE_WIDTH = 10;
 const TILE_HEIGHT = 10;
 
+const THREAD_COUNT = 2;
+
 fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
@@ -49,6 +51,10 @@ fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap) void {
     tilemap.edit_tile(selected_id, x / (TILE_WIDTH), y / (TILE_HEIGHT));
 }
 
+fn save(tm: *Tilemap, alloc: std.mem.Allocator) !void {
+    try tm.save(alloc);
+}
+
 var selected_id: TileID = TileID.grass;
 var selected_tool = DrawTools.single;
 
@@ -67,7 +73,10 @@ pub fn main() !void {
     var arena_alloc = arena.allocator();
     var tex_map = try TextureMap.init(alloc, arena_alloc, window.renderer, @constCast(@ptrCast("assets/textures/")));
     defer tex_map.deinit();
-    var tilemap = try Tilemap.init("assets/maps/next_test", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
+    var tilemap: Tilemap = try Tilemap.init("assets/maps/next_test", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
+
+    //var thread_pool: [THREAD_COUNT]std.Thread = undefined;
+    //_ = thread_pool;
 
     var left_mouse_is_down = false;
     while (!quit) {
@@ -85,18 +94,20 @@ pub fn main() !void {
                     'w' => viewport.dy -= if (viewport.dy > -4) 2 else 0,
                     'a' => viewport.dx -= if (viewport.dx > -4) 2 else 0,
                     's' => {
-                        // save to file if control is also held
-                        if (event.key.keysym.mod & c.KMOD_CTRL == 0) {
-                            viewport.dy += if (viewport.dy < 4) 2 else 0;
+                        if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
+                            var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc });
+                            t.detach();
                         } else {
-                            try tilemap.save(alloc);
+                            viewport.dy += if (viewport.dy < 4) 2 else 0;
                         }
                     },
                     'd' => viewport.dx += if (viewport.dx < 4) 2 else 0,
                     'e' => {
                         // need to edit to let user select output file
                         if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
-                            try tilemap.export_to_file("assets/maps/first_export", alloc);
+                            //try tilemap.export_to_file("assets/maps/first_export", alloc);
+                            var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc });
+                            t.detach();
                         } else {
                             // do something else, I guess
                         }
