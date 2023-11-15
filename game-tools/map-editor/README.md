@@ -26,8 +26,8 @@ This is currently _*very much unfinished*_ and still a WIP.
     - [ ] allow resizing of map
 - [x] render textures based on id of tile in memory
 - [x] write to file at end
+- [x] launch editor from CLI with map to load right away
 - [ ] open editor indpendent of a map and prompt for map to load
-- [ ] launch editor from CLI with map to load right away
 
 ### To Come Later:
 
