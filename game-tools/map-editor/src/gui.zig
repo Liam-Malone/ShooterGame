@@ -34,24 +34,24 @@ pub const Toolbar = struct {
     }
 };
 
-pub const DumbButtonID = enum {
+pub const ButtonID = enum {
     SelectWater,
     SelectGrass,
     SelectDirt,
     SelectStone,
 };
 
-pub const DumbButton = struct {
+pub const Button = struct {
     x: u32,
     y: u32,
     w: u32,
     h: u32,
     color: graphics.Color,
     rect: c.SDL_Rect,
-    id: DumbButtonID,
+    id: ButtonID,
 
-    pub fn init(x: u32, y: u32, w: u32, h: u32, color: graphics.Color, id: DumbButtonID) DumbButton {
-        return DumbButton{
+    pub fn init(x: u32, y: u32, w: u32, h: u32, color: graphics.Color, id: ButtonID) Button {
+        return Button{
             .x = x,
             .y = y,
             .w = w,
@@ -66,7 +66,7 @@ pub const DumbButton = struct {
             },
         };
     }
-    pub fn click(self: *const DumbButton, x: u32, y: u32) ?DumbButtonID {
+    pub fn click(self: *const Button, x: u32, y: u32) ?ButtonID {
         if (x >= self.x and x <= self.x + self.w and y >= self.y and y <= self.y + self.h) {
             return self.id;
         } else {
@@ -74,47 +74,7 @@ pub const DumbButton = struct {
         }
     }
 
-    pub fn render(self: *const DumbButton, renderer: *c.SDL_Renderer) void {
-        graphics.set_render_color(renderer, graphics.Color.make_sdl_color(self.color));
-        _ = c.SDL_RenderFillRect(renderer, &self.rect);
-    }
-};
-
-pub const Button = struct {
-    x: u32,
-    y: u32,
-    w: u32,
-    h: u32,
-    color: graphics.Color,
-    func: fn () void,
-    rect: c.SDL_Rect,
-
-    pub fn init(comptime x: u32, comptime y: u32, comptime w: u32, comptime h: u32, comptime color: graphics.Color, comptime function: anytype) Button {
-        return Button{
-            .x = x,
-            .y = y,
-            .w = w,
-            .h = h,
-            .color = color,
-            .func = function,
-            .rect = c.SDL_Rect{
-                .x = @intCast(x),
-                .y = @intCast(y),
-                .w = @intCast(w),
-                .h = @intCast(h),
-            },
-        };
-    }
-    pub fn click(comptime self: *const Button, x: u32, y: u32) bool {
-        if (x >= self.x and x <= self.x + self.w and y >= self.y and y <= self.y + self.h) {
-            self.func();
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    pub fn render(comptime self: *const Button, renderer: *c.SDL_Renderer) void {
+    pub fn render(self: *const Button, renderer: *c.SDL_Renderer) void {
         graphics.set_render_color(renderer, graphics.Color.make_sdl_color(self.color));
         _ = c.SDL_RenderFillRect(renderer, &self.rect);
     }

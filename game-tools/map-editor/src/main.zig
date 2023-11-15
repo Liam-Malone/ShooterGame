@@ -3,8 +3,6 @@ const graphics = @import("graphics.zig");
 const gui = @import("gui.zig");
 const c = @import("c.zig");
 
-const Button = gui.Button;
-
 const Color = graphics.Color;
 const TextureMap = graphics.TextureMap;
 const Tilemap = graphics.Tilemap;
@@ -77,10 +75,10 @@ pub fn main() !void {
     defer tex_map.deinit();
     var tilemap: Tilemap = try Tilemap.init("assets/maps/next_test", alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
 
-    const dumb_buttons = [_]gui.DumbButton{
-        gui.DumbButton.init(30, 100, 30, 30, Color.blue, gui.DumbButtonID.SelectWater),
-        gui.DumbButton.init(60, 100, 30, 30, Color.green, gui.DumbButtonID.SelectGrass),
-        gui.DumbButton.init(30, 130, 30, 30, Color.stone, gui.DumbButtonID.SelectStone),
+    const dumb_buttons = [_]gui.Button{
+        gui.Button.init(30, 100, 30, 30, Color.blue, gui.ButtonID.SelectWater),
+        gui.Button.init(60, 100, 30, 30, Color.green, gui.ButtonID.SelectGrass),
+        gui.Button.init(30, 130, 30, 30, Color.stone, gui.ButtonID.SelectStone),
     };
 
     var clicked_button = false;
