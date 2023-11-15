@@ -6,19 +6,16 @@ This thing is really just something for me to toy with 2d game dev stuff.
 
 > I have no idea how far I'll be taking this
 
-## IMPORTANT NOTE:
-
-I have made many changes to the map-related code within the game-tools/map-editor subdirectory that are not yet implemented in the main game code.
-To run the map editor, you can compile and run it from the game-tools/map-editor directory
-
 ## Getting Started
+
 
 If you want to play this (I must warn, it's not really in a playable state yet) you can compile it and run it for yourself.
 
+> NOTE: game-tools/map-editor will probably contain more up-to-date map stuff, but I have recently merged the map-related code into this section.
 
 ### Build From Source
 
-If I do every provide a bindary, it will not be until this project is in a much more complete-looking state
+If I do every provide a binary, it will not be until this project is in a much more complete-looking state
 
 Dependencies:
 
@@ -32,4 +29,4 @@ Building:
 ```console
 $ zig build run
 ```
-> I have yet to test compiling on windows
+> I have yet to test compiling on windows... if you find any issues with it (or if you can fix it for me) feel free to reach out.

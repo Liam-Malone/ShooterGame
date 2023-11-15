@@ -7,7 +7,6 @@ const FONT_FILE = @embedFile("DejaVuSans.ttf");
 const PIXEL_BUFFER = 1;
 const TILE_WIDTH = 10;
 const TILE_HEIGHT = 10;
-const TEX_PATH = "assets/textures/";
 
 pub const Color = enum(u32) {
     white = 0xFFFFFFFF,
@@ -380,8 +379,11 @@ pub const Viewport = struct {
         };
     }
     pub fn can_see(self: *Viewport, x: i32, y: i32, w: i32, h: i32) bool {
-        if ((x + w > self.x or x > self.x + self.w) and (y + h > self.y or y < self.y + self.h)) return true;
-        return false;
+        if ((x + w > self.x or x > self.x + self.w) and (y + h > self.y or y < self.y + self.h)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 };
 

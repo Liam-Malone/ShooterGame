@@ -16,14 +16,16 @@ pub const Color = enum(u32) {
     purple = 0x7BF967AA,
     red = 0xFC1A17CC,
     dark_gray = 0x181818FF,
-    grass = 0x00AA00FF,
+    blue = 0x0000CCFF,
+    green = 0x00AA00FF,
     dirt = 0x3C2414AA,
     wood = 0x22160B88,
     stone = 0x7F7F98AA,
     leaves = 0x00FF0000,
+    void = 0xFF00FFFF,
 
     pub fn make_sdl_color(col: Color) c.SDL_Color {
-        const color = @intFromEnum(col);
+        var color = @intFromEnum(col);
         const r: u8 = @truncate((color >> (3 * 8)) & 0xFF);
         const g: u8 = @truncate((color >> (2 * 8)) & 0xFF);
         const b: u8 = @truncate((color >> (1 * 8)) & 0xFF);
@@ -45,164 +47,300 @@ const DisplayMode = enum {
 };
 
 const TileID = enum(u32) {
-    grass = 0,
-    stone = 1,
-    dirt = 2,
-    wood = 3,
-    leaves = 4,
+    void = 0,
+    grass = 1,
+    stone = 2,
+    water = 3,
+    wood = 4,
+    dirt = 5,
+    leaves = 6,
+};
 
-    pub fn create(id: u32) !TileID {
-        switch (id) {
-            0 => {
-                return TileID.grass;
-            },
-            1 => {
-                return TileID.stone;
-            },
-            2 => {
-                return TileID.dirt;
-            },
-            3 => {
-                return TileID.wood;
-            },
-            4 => {
-                return TileID.leaves;
-            },
-            else => {
-                unreachable;
+pub const TextureMap = struct {
+    textures: []?*c.SDL_Texture,
+
+    pub fn init(allocator: std.mem.Allocator, arena_allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8) !TextureMap {
+        var tex_list = std.ArrayList(?*c.SDL_Texture).init(allocator);
+
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.void));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.grass));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.stone));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.water));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.wood));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.dirt));
+        try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.leaves));
+
+        return TextureMap{
+            .textures = try tex_list.toOwnedSlice(),
+        };
+    }
+    pub fn deinit(self: *TextureMap) void {
+        for (self.textures) |tex| {
+            c.SDL_DestroyTexture(tex);
+        }
+    }
+    // arena alloc_time
+    pub fn load_tex(arena_allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8, tile_id: TileID) !?*c.SDL_Texture {
+        var tex: ?*c.SDL_Texture = null;
+        var default_tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "no_tex.png" });
+        var i: usize = 0;
+        const tmp_def = try arena_allocator.alloc(u8, default_tex_path.len + 1);
+        tmp_def[default_tex_path.len] = 0;
+        while (i < default_tex_path.len) {
+            tmp_def[i] = default_tex_path[i];
+            i += 1;
+        }
+        const default_path = tmp_def[0..default_tex_path.len :0];
+        std.debug.print("type of default: {any}\n", .{@TypeOf(default_path)});
+
+        var tex_path: []u8 = undefined;
+        switch (tile_id) {
+            .void => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "no_tex.png" }),
+            .grass => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "grass-tex.png" }),
+            .stone => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "basic-stone.png" }),
+            .water => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "water-tex.png" }),
+            .dirt => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "dirt-tex.png" }),
+            .wood, .leaves => {
+                std.debug.print("*** TODO: add texture for {any} *** \n", .{tile_id});
+                tex_path = default_tex_path;
             },
         }
+
+        var tmp = try arena_allocator.alloc(u8, tex_path.len + 1);
+        i = 0;
+        while (i < tex_path.len) {
+            tmp[i] = tex_path[i];
+            i += 1;
+        }
+        tmp[tex_path.len] = 0;
+        const tmp_str = tmp[0..tex_path.len :0];
+
+        tex = c.IMG_LoadTexture(renderer, @ptrCast(tmp_str)) orelse c.IMG_LoadTexture(renderer, default_path);
+        return tex;
     }
 };
 
 const Tile = struct {
-    w: f32 = TILE_WIDTH,
-    h: f32 = TILE_HEIGHT,
-    x: f32,
-    y: f32,
+    w: i32,
+    h: i32,
+    x: i32,
+    y: i32,
     id: TileID,
+    tex: ?*c.SDL_Texture,
+    tex_map: *TextureMap,
+    is_assigned: bool = false,
 
-    pub fn init(id: u32, x: u32, y: u32) Tile {
+    pub fn init(id: u32, x: u32, y: u32, tex_map: *TextureMap, w: u32, h: u32, assigned: bool) Tile {
+        const tile = switch (id) {
+            0 => TileID.void,
+            1 => TileID.grass,
+            2 => TileID.stone,
+            3 => TileID.water,
+            4 => TileID.dirt,
+            else => TileID.void,
+        };
+
+        if (!assigned) std.debug.print("hmmm: ({d}, {d})\n", .{ x, y });
         return Tile{
-            .x = @as(f32, @floatFromInt(x)) * TILE_WIDTH,
-            .y = @as(f32, @floatFromInt(y)) * TILE_HEIGHT,
-            .id = try TileID.create(id),
+            .w = @intCast(w),
+            .h = @intCast(h),
+            .x = @intCast(x * w),
+            .y = @intCast(y * h),
+            .id = tile,
+            .tex = tex_map.*.textures[@intFromEnum(tile)],
+            .tex_map = tex_map,
+            .is_assigned = assigned,
         };
     }
+    pub fn update(self: *Tile, id: TileID) void {
+        self.id = id;
+        self.tex = self.tex_map.*.textures[@intFromEnum(id)];
+        std.debug.print("new tex w id: {any}\n", .{id});
+    }
+
+    pub fn render(self: *Tile, renderer: *c.SDL_Renderer, vp: *Viewport) void {
+        if (vp.can_see(self.x, self.y, self.w, self.h)) {
+            const rect = c.SDL_Rect{
+                .x = @intCast(self.x - vp.x),
+                .y = @intCast(self.y - vp.y),
+                .w = @intCast(self.w),
+                .h = @intCast(self.h),
+            };
+            if (!self.is_assigned) {
+                set_render_color(renderer, Color.make_sdl_color(self.get_color()));
+                _ = c.SDL_RenderFillRect(renderer, &rect);
+                return;
+            }
+            if (self.tex) |tex| _ = c.SDL_RenderCopy(renderer, tex, null, &rect);
+        }
+    }
+
     pub fn get_color(self: *Tile) Color {
         var col: Color = undefined;
         switch (self.id) {
-            TileID.grass => {
-                col = Color.grass;
-            },
-            TileID.dirt => {
-                col = Color.dirt;
-            },
-            TileID.wood => {
-                col = Color.wood;
-            },
-            TileID.stone => {
-                col = Color.stone;
-            },
-            TileID.leaves => {
-                col = Color.leaves;
-            },
+            TileID.grass => col = Color.green,
+            TileID.dirt => col = Color.dirt,
+            TileID.wood => col = Color.wood,
+            TileID.stone => col = Color.stone,
+            TileID.leaves => col = Color.leaves,
+            else => col = Color.void,
         }
         return col;
     }
 };
 pub const Tilemap = struct {
-    tiles: [][]Tile,
+    tile_list: [][]Tile,
+    filename: []const u8,
 
-    //
-    pub fn init(filepath: []const u8, allocator: std.mem.Allocator) !Tilemap {
+    pub fn init(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, world_width: u32, world_height: u32) !Tilemap {
         print("\ntrying path: {s}\n", .{filepath});
-        const tiles = try load_from_file(filepath, allocator);
+        var tile_list = try load_from_file(filepath, allocator, tex_map, tile_w, tile_h, world_width, world_height);
         var tile_count: usize = 0;
-        for (tiles) |row| {
-            for (row) |tile| {
-                _ = tile;
-                tile_count += 1;
-            }
+        for (tile_list) |tile| {
+            _ = tile;
+            tile_count += 1;
         }
-        print("\n**DEBUG PRINTING TILEMAP**\n\t(tile count: {d})\t\n", .{tile_count});
-        try print_map(tiles);
         return Tilemap{
-            .tiles = tiles,
+            .tile_list = tile_list,
+            .filename = filepath,
         };
     }
 
-    //******************************************************//
-    //                   LOAD CUSTOM TILEMAP                //
-    //    ---------------------------------------------     //
-    //        tilemap file will be something like:          //
-    //                                                      //
-    //                0 1 0 0 0 0 0 0 1 0                   //
-    //                0 1 1 1 1 1 1 1 1 1                   //
-    //                0 0 0 0 0 1 1 0 0 0                   //
-    //                                                      //
-    //                                                      //
-    //    function should read in file line by line and     //
-    //    sort int values into the appropriate Tile enum    //
-    //    values, collecting into an arraylist, then to     //
-    //    an array of Tiles, which is to be added to the    //
-    //    arraylist, and subsequently, the array, of        //
-    //    Tile arrays, which will determine the map.        //
-    //******************************************************//
-
-    fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator) ![][]Tile {
-        // read in one line at a time, sort into map based on numerical value
-        var map_maker = std.ArrayList([]Tile).init(allocator);
-        defer map_maker.deinit();
-        const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 250);
-        defer allocator.free(data);
-        var iter_lines = std.mem.split(u8, data, "\n");
-        var ypos: u32 = 0;
-        while (iter_lines.next()) |line| {
-            var tile_arr = std.ArrayList(Tile).init(allocator);
-            defer tile_arr.deinit();
-            var iter_inner = std.mem.split(u8, line, " ");
-            var xpos: u32 = 0;
-            while (iter_inner.next()) |val| {
-                if (val.len != 0) {
-                    const int_val: u32 = try std.fmt.parseInt(u32, val, 10);
-                    try tile_arr.append(Tile.init(int_val, xpos, ypos));
-                    xpos += 1;
-                }
-            }
-            const arr: []Tile = try tile_arr.toOwnedSlice();
-            try map_maker.append(arr);
-            ypos += 1;
-        }
-        const tilemap: [][]Tile = try map_maker.toOwnedSlice();
-        return tilemap;
+    pub fn deinit(self: *Tilemap) void {
+        _ = self;
     }
 
-    pub fn render(self: *Tilemap, renderer: *c.SDL_Renderer, vp: *Viewport) void {
-        for (0..self.tiles.len) |i| {
-            for (0..self.tiles[i].len) |j| {
-                const tile = self.tiles[i][j];
-                if (vp.can_see(@intFromFloat(tile.x), @intFromFloat(tile.y), @intFromFloat(tile.w), @intFromFloat(tile.h))) {
-                    const rect = c.SDL_Rect{
-                        .x = @as(c_int, @intFromFloat(tile.x)) - vp.x,
-                        .y = @as(c_int, @intFromFloat(tile.y)) - vp.y,
-                        .w = @as(c_int, @intFromFloat(tile.w)),
-                        .h = @as(c_int, @intFromFloat(tile.h)),
-                    };
-                    set_render_color(renderer, Color.make_sdl_color(self.tiles[i][j].get_color()));
-                    _ = c.SDL_RenderFillRect(renderer, &rect);
+    //**********************************//
+    //       MAP IMPORT FROM FILE       //
+    //  ------------------------------  //
+    //       *** ==> TODO <== ***       //
+    //                                  //
+    //  enable allocation of correctly  //
+    //  sized buffers depending on      //
+    //  the size of the map file        //
+    //                                  //
+    //  ------------------------------  //
+    //       *** ==> TODO <== ***       //
+    //                                  //
+    //  enable passing of new files     //
+    //  open read-only? create if fail? //
+    //                                  //
+    //**********************************//
+    fn load_from_file(filepath: []const u8, allocator: std.mem.Allocator, tex_map: *TextureMap, tile_w: u32, tile_h: u32, world_width: u32, world_height: u32) ![][]Tile {
+        const arr_len = (world_width / tile_w) * (world_height / tile_h);
+        var map = std.ArrayList([]Tile).init(allocator); // caller needs to free on return
+        const data = try std.fs.cwd().readFileAlloc(allocator, filepath, 855000);
+        defer allocator.free(data);
+
+        var iter_lines = std.mem.split(u8, data, "\n");
+        var counter: u32 = 0;
+        var y: u32 = 0;
+        var is_first = true;
+        while (iter_lines.next()) |line| {
+            if (line.len < 1 and is_first) {
+                const id = 0;
+                while (y < world_height / tile_h) {
+                    var x: u32 = 0;
+                    var col = std.ArrayList(Tile).init(allocator);
+                    while (x < world_width / tile_w) {
+                        try col.append(Tile.init(id, x, y, tex_map, tile_w, tile_h, true));
+                        counter += 1;
+                        x += 1;
+                    }
+                    y += 1;
+                    try map.append(try col.toOwnedSlice());
                 }
-                // render tile
+            } else {
+                var x: u32 = 0;
+                var col = std.ArrayList(Tile).init(allocator);
+                var iter_col = std.mem.split(u8, line, " ");
+                while (iter_col.next()) |val| {
+                    if (val.len > 0) {
+                        const id = try std.fmt.parseInt(u32, val, 10);
+                        try col.append(Tile.init(id, x, y, tex_map, tile_w, tile_h, true));
+                        counter += 1;
+                        x += 1;
+                    }
+                }
+                y += 1;
+                try map.append(try col.toOwnedSlice());
+            }
+        }
+        std.debug.print("counted\texpected\n{d}\t{d}\n", .{ counter, arr_len });
+        return try map.toOwnedSlice();
+    }
+    pub fn edit_tile(self: *Tilemap, id: TileID, x: u32, y: u32) void {
+        if (y >= self.tile_list.len or x >= self.tile_list[0].len) return;
+        if (!self.tile_list[y][x].is_assigned) {
+            std.debug.print("edit new item []\n", .{});
+            self.tile_list[y][x].x = @as(i32, @intCast(x)) * self.tile_list[y][x].w;
+            self.tile_list[y][x].y = @as(i32, @intCast(y)) * self.tile_list[y][x].h;
+            self.tile_list[y][x].is_assigned = true;
+            self.tile_list[y][x].update(id);
+            return;
+        } else {
+            if (self.tile_list[y][x].id == id) {
+                print("same id: {any}\n", .{id});
+                return;
+            } else {
+                std.debug.print("edit item []\n", .{});
+                self.tile_list[y][x].update(id);
+                return;
+            }
+        }
+    }
+
+    //**********************************//
+    //           FILE EXPORT            //
+    // -------------------------------- //
+    //       *** ==> TODO <== ***       //
+    // add check for file existence and //
+    // create file if it does not exist //
+    //**********************************//
+    pub fn export_to_file(self: *Tilemap, output_file: []const u8, allocator: std.mem.Allocator) !void {
+        var file = std.fs.cwd().openFile(
+            output_file,
+            .{ .mode = std.fs.File.OpenMode.write_only },
+        ) catch try std.fs.cwd().createFile(output_file, .{});
+        defer file.close();
+        for (self.tile_list, 0..) |col, y| {
+            for (col, 0..) |tile, x| {
+                var tile_string: ?[]const u8 = null;
+                if (x + 1 == self.tile_list[y].len) {
+                    tile_string = try std.fmt.allocPrint(allocator, "{d}", .{@intFromEnum(tile.id)});
+                } else {
+                    tile_string = try std.fmt.allocPrint(allocator, "{d} ", .{@intFromEnum(tile.id)});
+                }
+
+                if (tile_string) |ts| {
+                    defer allocator.free(ts);
+                    _ = try file.write(ts);
+                }
+            }
+            _ = try file.write("\n");
+        }
+        const stdout = std.io.getStdOut().writer();
+        try stdout.print("File export completed\n", .{});
+    }
+
+    pub fn save(self: *Tilemap, allocator: std.mem.Allocator) !void {
+        try self.export_to_file(self.filename, allocator);
+    }
+
+    pub fn render(self: *Tilemap, renderer: *c.SDL_Renderer, vp: *Viewport, window: Window) void {
+        _ = window;
+        for (self.tile_list, 0..) |col, i| {
+            for (col, 0..) |tile, j| {
+                _ = tile;
+                self.tile_list[i][j].render(renderer, vp);
             }
         }
     }
 
     // debug purposes
-    fn print_map(map: [][]Tile) !void {
-        for (map) |arr| {
-            for (arr) |tile| {
-                print("{any} ", .{tile});
-            }
+    fn print_map(map: []Tile) !void {
+        for (map) |tile| {
+            print("{any} ", .{tile});
             print("\n", .{});
         }
     }
@@ -217,36 +355,25 @@ pub const Viewport = struct {
     dx: i32 = 0,
     dy: i32 = 0,
 
-    pub fn init(x: i32, y: i32, width: i32, height: i32) Viewport {
+    pub fn init(x: i32, y: i32, w: i32, h: i32) Viewport {
         return Viewport{
             .x = x,
             .y = y,
-            .w = width,
-            .h = height,
+            .w = w,
+            .h = h,
             .rect = c.SDL_Rect{
-                .x = @as(c_int, x),
-                .y = @as(c_int, y),
-                .w = @as(c_int, width),
-                .h = @as(c_int, height),
+                .x = @intCast(x),
+                .y = @intCast(y),
+                .w = @intCast(w),
+                .h = @intCast(h),
             },
         };
     }
-    pub fn update(self: *Viewport, destx: i32, desty: i32, max_x: i32, max_y: i32) void {
-        const xdiff = destx - @divExact(self.w, 2);
-        const ydiff = desty - @divExact(self.h, 2);
-
-        if (xdiff != self.x) {
-            const diff: i32 = @divFloor(xdiff - self.x, 3);
-            self.dx = if (self.x + diff > 0 and self.x + self.w + diff < max_x) diff else 0;
-        } else self.dx = 0;
-
-        if (ydiff != self.y) {
-            const diff = @divFloor(ydiff - self.y, 3);
-            self.dy = if (self.y + diff > 0 and self.y + self.h + diff < max_y) diff else 0;
-        } else self.dy = 0;
-
+    pub fn update(self: *Viewport) void {
         self.x += self.dx;
         self.y += self.dy;
+        self.dy += if (self.dy > 0) -1 else if (self.dy < 0) 1 else 0;
+        self.dx += if (self.dx > 0) -1 else if (self.dx < 0) 1 else 0;
         self.rect = c.SDL_Rect{
             .x = @as(c_int, self.x),
             .y = @as(c_int, self.y),
@@ -255,8 +382,11 @@ pub const Viewport = struct {
         };
     }
     pub fn can_see(self: *Viewport, x: i32, y: i32, w: i32, h: i32) bool {
-        if ((x + w > self.x or x > self.x + self.w) and (y + h > self.y or y < self.y + self.h)) return true;
-        return false;
+        if ((x + w > self.x or x > self.x + self.w) and (y + h > self.y or y < self.y + self.h)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 };
 

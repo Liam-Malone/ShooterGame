@@ -1,16 +1,21 @@
 const std = @import("std");
 const graphics = @import("graphics.zig");
 const entities = @import("entities.zig");
+const gui = @import("gui.zig");
 const audio = @import("audio.zig");
+
+const c = @import("c.zig");
 
 const SoundEffect = audio.SoundEffect;
 const Music = audio.Music;
 
-const Sprite = graphics.Sprite;
-const Viewport = graphics.Viewport;
 const Color = graphics.Color;
-const Window = graphics.Window;
+const Sprite = graphics.Sprite;
+const TextureMap = graphics.TextureMap;
+const TileID = graphics.TileID;
 const Tilemap = graphics.Tilemap;
+const Viewport = graphics.Viewport;
+const Window = graphics.Window;
 
 const Bullet = entities.Bullet;
 const Player = entities.Player;
@@ -22,12 +27,12 @@ const handle_player_event = @import("input.zig").handle_player_event;
 const overlaps = c.SDL_HasIntersection;
 const allocator = std.heap.page_allocator;
 
-const c = @import("c.zig");
-
 const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
-const WORLD_WIDTH = 1200;
-const WORLD_HEIGHT = 1200;
+const WORLD_WIDTH = 2800;
+const WORLD_HEIGHT = 2800;
+const TILE_WIDTH = 10;
+const TILE_HEIGHT = 10;
 const BULLET_COUNT = 10;
 const PLAYER_SPRITE_PATH = "assets/images/basic_player.png";
 
@@ -84,6 +89,21 @@ pub fn main() !void {
 
     var viewport: Viewport = Viewport.init(0, 0, @intCast(window_width), @intCast(window_height));
 
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var alloc = gpa.allocator();
+
+    var arena = std.heap.ArenaAllocator.init(alloc);
+    var arena_alloc = arena.allocator();
+
+    const args = try std.process.argsAlloc(alloc);
+    defer std.process.argsFree(alloc, args);
+
+    const map_file = if (args.len > 1) args[1] else "assets/maps/next_test";
+
+    var tex_map = try TextureMap.init(alloc, arena_alloc, window.renderer, @constCast(@ptrCast("assets/textures/")));
+    defer tex_map.deinit();
+    var tilemap: Tilemap = try Tilemap.init(map_file, alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
+
     var music: Music = Music.init("assets/sounds/music/8_Bit_Nostalgia.mp3");
     defer music.deinit();
 
@@ -99,10 +119,6 @@ pub fn main() !void {
     var player_sprite = Sprite.init(window.renderer, PLAYER_SPRITE_PATH);
     defer player_sprite.deinit();
     var player: Player = Player.init(player_sprite, 300, 300, 20, grass_step);
-
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var alloc = gpa.allocator();
-    var map = try Tilemap.init("assets/maps/initial_map", alloc);
 
     var bullets = create_bullets(gunshot);
 
@@ -142,8 +158,8 @@ pub fn main() !void {
         _ = c.SDL_RenderClear(window.renderer);
 
         // *** TODO: BREAK AND RE-IMPLEMENT ***
-        viewport.update(@intFromFloat(player.x), @intFromFloat(player.y), WORLD_WIDTH, WORLD_HEIGHT);
-        map.render(window.renderer, &viewport);
+        viewport.update();
+        tilemap.render(window.renderer, &viewport, window);
 
         player.update();
         player.sprite.render(window.renderer, as_rect(player.hb), &viewport);
