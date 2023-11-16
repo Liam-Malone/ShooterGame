@@ -380,6 +380,15 @@ pub const Viewport = struct {
             .h = @as(c_int, self.h),
         };
     }
+
+    // set dx and dy to glide to center player
+    pub fn move(self: *Viewport, player_x: f32, player_y: f32) void {
+        const diffx: i32 = @as(i32, @intFromFloat(player_x)) - self.x;
+        _ = diffx;
+        const diffy: i32 = @as(i32, @intFromFloat(player_y)) - self.y;
+        _ = diffy;
+    }
+
     pub fn can_see(self: *Viewport, x: i32, y: i32, w: i32, h: i32) bool {
         if ((x + w > self.x or x > self.x + self.w) and (y + h > self.y or y < self.y + self.h)) {
             return true;

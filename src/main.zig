@@ -159,6 +159,7 @@ pub fn main() !void {
 
         // *** TODO: BREAK AND RE-IMPLEMENT ***
         viewport.update();
+        viewport.move(player.x, player.y);
         tilemap.render(window.renderer, &viewport, window);
 
         player.update();
