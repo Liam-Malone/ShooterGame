@@ -2,9 +2,9 @@
 
 ### Highest Priority
 
-- [ ] add inventory system
-- [ ] enable player to hold tools
-
+- [-] implement concept of "camera"
+    - [x] move camera by keeping player centre of screen
+    - [ ] allow player to move a certain distance from centre of screen before moving
 > tilemap editor is located in game-tools/map-editor
 
 ### Standard Priority
@@ -13,14 +13,16 @@
     - [x] player sprite
     - [ ] textures for more of the tiles
     - [ ] more entity sprites
-    - [ ] bullet, torch sprites -- play with lighting (using dithering?) once torch is in
+    - [ ] bullet, torch sprites (play with lighting once torch is in)
 - [-] add other entities
     - [x] add basic enemy
     - [ ] improve basic enemy
     - [ ] add more kinds of enemy
     - [ ] add friendly entities
 - [ ] add pause screen
-- [ ] allow player to move a certain distance from centre of screen before moving
+- [ ] add inventory system
+    - [ ] give player control over their bullets
+    - [ ] enable player to hold tools
 
 ### Delayed Priority
 

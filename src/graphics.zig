@@ -347,23 +347,23 @@ pub const Tilemap = struct {
 
 pub const Viewport = struct {
     x: i32,
-    max_x: i32,
+    max_x: usize,
     y: i32,
-    max_y: i32,
+    max_y: usize,
     w: i32,
     h: i32,
     rect: c.SDL_Rect,
     dx: i32 = 0,
     dy: i32 = 0,
 
-    pub fn init(x: i32, y: i32, w: i32, h: i32, world_width: i32, world_height: i32) Viewport {
+    pub fn init(x: i32, y: i32, w: u32, h: u32, world_width: usize, world_height: usize) Viewport {
         return Viewport{
             .x = x,
-            .max_x = world_width - w,
+            .max_x = world_width,
             .y = y,
-            .max_y = world_height - h,
-            .w = w,
-            .h = h,
+            .max_y = world_height - @as(usize, h),
+            .w = @intCast(w),
+            .h = @intCast(h),
             .rect = c.SDL_Rect{
                 .x = @intCast(x),
                 .y = @intCast(y),
@@ -373,7 +373,7 @@ pub const Viewport = struct {
         };
     }
     pub fn update(self: *Viewport) void {
-        if (self.x + self.dx > 0 and self.x + self.dx < self.max_x) self.x += self.dx;
+        if (self.x + self.dx > 0 and self.x + self.w + self.dx < self.max_x) self.x += self.dx;
         if (self.y + self.dy > 0 and self.y + self.dy < self.max_y) self.y += self.dy;
 
         self.dy += if (self.dy > 0) -1 else if (self.dy < 0) 1 else 0;

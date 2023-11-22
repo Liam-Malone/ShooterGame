@@ -31,8 +31,8 @@ const FPS = 60;
 const BACKGROUND_COLOR = Color.dark_gray;
 const WORLD_WIDTH = 2800;
 const WORLD_HEIGHT = 2800;
-const TILE_WIDTH = 10;
-const TILE_HEIGHT = 10;
+const TILE_WIDTH = 40;
+const TILE_HEIGHT = 40;
 const BULLET_COUNT = 10;
 const PLAYER_SPRITE_PATH = "assets/images/basic_player.png";
 
@@ -87,8 +87,6 @@ pub fn main() !void {
     audio.open_audio(44100, 8, 2048);
     defer audio.close_audio();
 
-    var viewport: Viewport = Viewport.init(0, 0, @intCast(window_width), @intCast(window_height), WORLD_WIDTH, WORLD_HEIGHT);
-
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var alloc = gpa.allocator();
 
@@ -103,6 +101,8 @@ pub fn main() !void {
     var tex_map = try TextureMap.init(alloc, arena_alloc, window.renderer, @constCast(@ptrCast("assets/textures/")));
     defer tex_map.deinit();
     var tilemap: Tilemap = try Tilemap.init(map_file, alloc, &tex_map, TILE_WIDTH, TILE_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT);
+
+    var viewport: Viewport = Viewport.init(0, 0, window_width, window_height, WORLD_WIDTH * TILE_WIDTH / 10, WORLD_HEIGHT * TILE_HEIGHT / 10);
 
     var music: Music = Music.init("assets/sounds/music/8_Bit_Nostalgia.mp3");
     defer music.deinit();
@@ -138,11 +138,15 @@ pub fn main() !void {
                         quit = true;
                     },
                     ' ' => {
-                        pause = !pause;
-                        if (music.playing) {
-                            music.toggle_pause();
+                        if (event.key.keysym.mod & c.KMOD_SHIFT != 0) {
+                            player.move_speed = if (player.move_speed == 6) 2 else 6;
                         } else {
-                            music.play();
+                            pause = !pause;
+                            if (music.playing) {
+                                music.toggle_pause();
+                            } else {
+                                music.play();
+                            }
                         }
                     },
                     else => {},

@@ -43,7 +43,7 @@ pub const Player = struct {
     y: f32,
     dx: f32 = 0,
     dy: f32 = 0,
-    move_speed: f32 = 1,
+    move_speed: f32 = 2,
     hitpoints: u8 = 10,
     hb: Hitbox,
     footsteps: SoundEffect,
