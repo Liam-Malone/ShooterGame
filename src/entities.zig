@@ -3,6 +3,8 @@ const graphics = @import("graphics.zig");
 const audio = @import("audio.zig");
 const math = @import("math.zig");
 
+const c = @import("c.zig");
+
 const SoundEffect = audio.SoundEffect;
 const Vec2 = math.Vec2;
 
@@ -12,6 +14,19 @@ const PLAYER_HEIGHT = 60;
 pub const Visibility = enum {
     Visible,
     Invisible,
+};
+
+pub const ItemID = enum {
+    Gun,
+    Pickaxe,
+};
+
+pub const Item = struct {
+    id: ItemID,
+    hp: u32,
+    texture: *c.SDL_Texture,
+
+    pub fn init() Item {}
 };
 
 pub const Hitbox = struct {

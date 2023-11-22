@@ -87,7 +87,7 @@ pub fn main() !void {
     audio.open_audio(44100, 8, 2048);
     defer audio.close_audio();
 
-    var viewport: Viewport = Viewport.init(0, 0, @intCast(window_width), @intCast(window_height));
+    var viewport: Viewport = Viewport.init(0, 0, @intCast(window_width), @intCast(window_height), WORLD_WIDTH, WORLD_HEIGHT);
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var alloc = gpa.allocator();
@@ -159,7 +159,7 @@ pub fn main() !void {
 
         // *** TODO: BREAK AND RE-IMPLEMENT ***
         viewport.update();
-        viewport.move(player.x, player.y);
+        viewport.move(player.x, player.y, window.width, window.height);
         tilemap.render(window.renderer, &viewport, window);
 
         player.update();

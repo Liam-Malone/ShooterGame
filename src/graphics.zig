@@ -347,17 +347,21 @@ pub const Tilemap = struct {
 
 pub const Viewport = struct {
     x: i32,
+    max_x: i32,
     y: i32,
+    max_y: i32,
     w: i32,
     h: i32,
     rect: c.SDL_Rect,
     dx: i32 = 0,
     dy: i32 = 0,
 
-    pub fn init(x: i32, y: i32, w: i32, h: i32) Viewport {
+    pub fn init(x: i32, y: i32, w: i32, h: i32, world_width: i32, world_height: i32) Viewport {
         return Viewport{
             .x = x,
+            .max_x = world_width - w,
             .y = y,
+            .max_y = world_height - h,
             .w = w,
             .h = h,
             .rect = c.SDL_Rect{
@@ -369,8 +373,9 @@ pub const Viewport = struct {
         };
     }
     pub fn update(self: *Viewport) void {
-        self.x += self.dx;
-        self.y += self.dy;
+        if (self.x + self.dx > 0 and self.x + self.dx < self.max_x) self.x += self.dx;
+        if (self.y + self.dy > 0 and self.y + self.dy < self.max_y) self.y += self.dy;
+
         self.dy += if (self.dy > 0) -1 else if (self.dy < 0) 1 else 0;
         self.dx += if (self.dx > 0) -1 else if (self.dx < 0) 1 else 0;
         self.rect = c.SDL_Rect{
@@ -382,11 +387,13 @@ pub const Viewport = struct {
     }
 
     // set dx and dy to glide to center player
-    pub fn move(self: *Viewport, player_x: f32, player_y: f32) void {
-        const diffx: i32 = @as(i32, @intFromFloat(player_x)) - self.x;
-        _ = diffx;
-        const diffy: i32 = @as(i32, @intFromFloat(player_y)) - self.y;
-        _ = diffy;
+    pub fn move(self: *Viewport, player_x: f32, player_y: f32, win_width: u32, win_height: u32) void {
+        self.w = @intCast(win_width);
+        self.h = @intCast(win_height);
+        const diffx: i32 = @as(i32, @intFromFloat(player_x)) - (self.x + @divTrunc(self.w, 2));
+        self.dx = @divTrunc(diffx, 2);
+        const diffy: i32 = @as(i32, @intFromFloat(player_y)) - (self.y + @divTrunc(self.h, 2));
+        self.dy = @divTrunc(diffy, 2);
     }
 
     pub fn can_see(self: *Viewport, x: i32, y: i32, w: i32, h: i32) bool {

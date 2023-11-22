@@ -4,6 +4,14 @@ const c = @import("c.zig");
 
 const Tile = graphics.Tile;
 
+pub const Hotbar = struct {
+    color: graphics.Color,
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+};
+
 pub const Toolbar = struct {
     color: graphics.Color = graphics.Color.stone,
     buttons: []Button,
