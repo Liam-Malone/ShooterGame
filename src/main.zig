@@ -34,7 +34,7 @@ const WORLD_HEIGHT = 2800;
 const TILE_WIDTH = 40;
 const TILE_HEIGHT = 40;
 const BULLET_COUNT = 10;
-const PLAYER_SPRITE_PATH = "assets/images/basic_player.png";
+const PLAYER_SPRITE_PATH = "assets/textures/new-player-front.png";
 
 fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
     _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);

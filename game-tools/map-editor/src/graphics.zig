@@ -102,7 +102,6 @@ pub const TextureMap = struct {
                 tex_path = default_tex_path;
             },
         }
-
         var tmp = try arena_allocator.alloc(u8, tex_path.len + 1);
         i = 0;
         while (i < tex_path.len) {

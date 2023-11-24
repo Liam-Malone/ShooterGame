@@ -433,7 +433,7 @@ pub const Sprite = struct {
             const render_rect = c.SDL_Rect{
                 .x = (rect.x - vp.x),
                 .y = (rect.y - vp.y),
-                .w = rect.w + 20,
+                .w = rect.w + 60,
                 .h = rect.h + 20,
             };
             //_ = c.SDL_RenderCopy(renderer, self.img_tex, null, &render_rect);
