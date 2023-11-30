@@ -427,8 +427,6 @@ pub const Sprite = struct {
     }
 
     pub fn render(self: *Sprite, renderer: *c.SDL_Renderer, rect: c.SDL_Rect, vp: *Viewport) void {
-        // not final
-        //if (rect.x + rect.w - vp.x > vp.x or rect.x - vp.x < vp.x + vp.w) {
         if (vp.can_see(rect.x, rect.y, rect.w, rect.h)) {
             const render_rect = c.SDL_Rect{
                 .x = (rect.x - vp.x),
@@ -436,7 +434,6 @@ pub const Sprite = struct {
                 .w = rect.w + 60,
                 .h = rect.h + 20,
             };
-            //_ = c.SDL_RenderCopy(renderer, self.img_tex, null, &render_rect);
             if (self.flipped) {
                 _ = c.SDL_RenderCopyEx(renderer, self.img_tex, null, &render_rect, 0, null, c.SDL_FLIP_HORIZONTAL);
             } else _ = c.SDL_RenderCopyEx(renderer, self.img_tex, null, &render_rect, 0, null, c.SDL_FLIP_NONE);
