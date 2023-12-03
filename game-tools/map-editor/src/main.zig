@@ -51,8 +51,11 @@ fn place_at_pos(x: u32, y: u32, tilemap: *Tilemap) void {
     tilemap.edit_tile(selected_id, x / (TILE_WIDTH), y / (TILE_HEIGHT));
 }
 
-fn save(tm: *Tilemap, alloc: std.mem.Allocator) !void {
+fn save(tm: *Tilemap, alloc: std.mem.Allocator, writing: *bool) !void {
+    writing.* = true;
+    std.debug.print("starting file write\n", .{});
     try tm.save(alloc);
+    writing.* = false;
 }
 
 var selected_id: TileID = TileID.grass;
@@ -92,6 +95,9 @@ pub fn main() !void {
 
     var clicked_button = false;
     var left_mouse_is_down = false;
+
+    var writing = false;
+
     while (!quit) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event) != 0) {
@@ -107,8 +113,13 @@ pub fn main() !void {
                     'a' => viewport.dx -= if (viewport.dx > -4) 2 else 0,
                     's' => {
                         if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
-                            var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc });
-                            t.detach();
+                            switch (writing) {
+                                false => {
+                                    var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc, &writing });
+                                    t.detach();
+                                },
+                                true => {},
+                            }
                         } else {
                             viewport.dy += if (viewport.dy < 4) 2 else 0;
                         }
@@ -117,8 +128,13 @@ pub fn main() !void {
                     'e' => {
                         // need to edit to let user select output file
                         if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
-                            var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc });
-                            t.detach();
+                            switch (writing) {
+                                false => {
+                                    var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc, &writing });
+                                    t.detach();
+                                },
+                                true => {},
+                            }
                         } else {
                             // do something else, I guess
                         }
