@@ -1,6 +1,6 @@
 const std = @import("std");
 const graphics = @import("graphics.zig");
-const c = @import("c.zig");
+const sdl = @import("sdl.zig");
 
 const Tile = graphics.Tile;
 
@@ -47,7 +47,7 @@ pub const Button = struct {
     w: u32,
     h: u32,
     color: graphics.Color,
-    rect: c.SDL_Rect,
+    rect: sdl.SDL_Rect,
     id: ButtonID,
 
     pub fn init(x: u32, y: u32, w: u32, h: u32, color: graphics.Color, id: ButtonID) Button {
@@ -58,7 +58,7 @@ pub const Button = struct {
             .h = h,
             .color = color,
             .id = id,
-            .rect = c.SDL_Rect{
+            .rect = sdl.SDL_Rect{
                 .x = @intCast(x),
                 .y = @intCast(y),
                 .w = @intCast(w),
@@ -74,8 +74,8 @@ pub const Button = struct {
         }
     }
 
-    pub fn render(self: *const Button, renderer: *c.SDL_Renderer) void {
+    pub fn render(self: *const Button, renderer: *sdl.SDL_Renderer) void {
         graphics.set_render_color(renderer, graphics.Color.make_sdl_color(self.color));
-        _ = c.SDL_RenderFillRect(renderer, &self.rect);
+        _ = sdl.SDL_RenderFillRect(renderer, &self.rect);
     }
 };

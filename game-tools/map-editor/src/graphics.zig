@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("c.zig");
+const sdl = @import("sdl.zig");
 
 const print = std.debug.print;
 
@@ -21,14 +21,14 @@ pub const Color = enum(u32) {
     leaves = 0x00FF0000,
     void = 0xFF00FFFF,
 
-    pub fn make_sdl_color(col: Color) c.SDL_Color {
+    pub fn make_sdl_color(col: Color) sdl.SDL_Color {
         var color = @intFromEnum(col);
         const r: u8 = @truncate((color >> (3 * 8)) & 0xFF);
         const g: u8 = @truncate((color >> (2 * 8)) & 0xFF);
         const b: u8 = @truncate((color >> (1 * 8)) & 0xFF);
         const a: u8 = @truncate((color >> (0 * 8)) & 0xFF);
 
-        return c.SDL_Color{
+        return sdl.SDL_Color{
             .r = r,
             .g = g,
             .b = b,
@@ -54,10 +54,10 @@ pub const TileID = enum(u32) {
 };
 
 pub const TextureMap = struct {
-    textures: []?*c.SDL_Texture,
+    textures: []?*sdl.SDL_Texture,
 
-    pub fn init(allocator: std.mem.Allocator, arena_allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8) !TextureMap {
-        var tex_list = std.ArrayList(?*c.SDL_Texture).init(allocator);
+    pub fn init(allocator: std.mem.Allocator, arena_allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, path: [:0]u8) !TextureMap {
+        var tex_list = std.ArrayList(?*sdl.SDL_Texture).init(allocator);
 
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.void));
         try tex_list.append(try load_tex(arena_allocator, renderer, path, TileID.grass));
@@ -73,12 +73,12 @@ pub const TextureMap = struct {
     }
     pub fn deinit(self: *TextureMap) void {
         for (self.textures) |tex| {
-            c.SDL_DestroyTexture(tex);
+            sdl.SDL_DestroyTexture(tex);
         }
     }
     // arena alloc_time
-    pub fn load_tex(arena_allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [0]u8, tile_id: TileID) !?*c.SDL_Texture {
-        var tex: ?*c.SDL_Texture = null;
+    pub fn load_tex(arena_allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, path: [:0]u8, tile_id: TileID) !?*sdl.SDL_Texture {
+        var tex: ?*sdl.SDL_Texture = null;
         var default_tex_path = try std.mem.concatWithSentinel(arena_allocator, u8, &[_][:0]const u8{ path, "no-tex.png" }, 0);
 
         var tex_path: [:0]u8 = undefined;
@@ -94,7 +94,7 @@ pub const TextureMap = struct {
             },
         }
 
-        tex = c.IMG_LoadTexture(renderer, tex_path) orelse c.IMG_LoadTexture(renderer, default_tex_path);
+        tex = sdl.IMG_LoadTexture(renderer, tex_path) orelse sdl.IMG_LoadTexture(renderer, default_tex_path);
         return tex;
     }
 };
@@ -105,7 +105,7 @@ pub const Tile = struct {
     x: i32,
     y: i32,
     id: TileID,
-    tex: ?*c.SDL_Texture,
+    tex: ?*sdl.SDL_Texture,
     tex_map: *TextureMap,
     is_assigned: bool = false,
 
@@ -137,9 +137,9 @@ pub const Tile = struct {
         std.debug.print("new tex w id: {any}\n", .{id});
     }
 
-    pub fn render(self: *Tile, renderer: *c.SDL_Renderer, vp: *Viewport) void {
+    pub fn render(self: *Tile, renderer: *sdl.SDL_Renderer, vp: *Viewport) void {
         if (vp.can_see(self.x, self.y, self.w, self.h)) {
-            const rect = c.SDL_Rect{
+            const rect = sdl.SDL_Rect{
                 .x = @intCast(self.x - vp.x),
                 .y = @intCast(self.y - vp.y),
                 .w = @intCast(self.w),
@@ -147,10 +147,10 @@ pub const Tile = struct {
             };
             if (!self.is_assigned) {
                 set_render_color(renderer, Color.make_sdl_color(self.get_color()));
-                _ = c.SDL_RenderFillRect(renderer, &rect);
+                _ = sdl.SDL_RenderFillRect(renderer, &rect);
                 return;
             }
-            if (self.tex) |tex| _ = c.SDL_RenderCopy(renderer, tex, null, &rect);
+            if (self.tex) |tex| _ = sdl.SDL_RenderCopy(renderer, tex, null, &rect);
         }
     }
 
@@ -306,7 +306,7 @@ pub const Tilemap = struct {
         try self.export_to_file(self.filename, allocator);
     }
 
-    pub fn render(self: *Tilemap, renderer: *c.SDL_Renderer, vp: *Viewport, window: Window) void {
+    pub fn render(self: *Tilemap, renderer: *sdl.SDL_Renderer, vp: *Viewport, window: Window) void {
         _ = window;
         for (self.tile_list, 0..) |col, i| {
             for (col, 0..) |tile, j| {
@@ -330,7 +330,7 @@ pub const Viewport = struct {
     y: i32,
     w: i32,
     h: i32,
-    rect: c.SDL_Rect,
+    rect: sdl.SDL_Rect,
     dx: i32 = 0,
     dy: i32 = 0,
 
@@ -340,7 +340,7 @@ pub const Viewport = struct {
             .y = y,
             .w = w,
             .h = h,
-            .rect = c.SDL_Rect{
+            .rect = sdl.SDL_Rect{
                 .x = @intCast(x),
                 .y = @intCast(y),
                 .w = @intCast(w),
@@ -353,7 +353,7 @@ pub const Viewport = struct {
         self.y += self.dy;
         self.dy += if (self.dy > 0) -1 else if (self.dy < 0) 1 else 0;
         self.dx += if (self.dx > 0) -1 else if (self.dx < 0) 1 else 0;
-        self.rect = c.SDL_Rect{
+        self.rect = sdl.SDL_Rect{
             .x = @as(c_int, self.x),
             .y = @as(c_int, self.y),
             .w = @as(c_int, self.w),
@@ -373,41 +373,41 @@ pub const ScreenText = struct {
     x: f32,
     y: f32,
     color: Color,
-    font_rw: *c.SDL_RWops,
-    font: *c.TTF_Font,
-    font_rect: c.SDL_Rect,
-    surface: *c.SDL_Surface,
-    tex: *c.SDL_Texture,
+    font_rw: *sdl.SDL_RWops,
+    font: *sdl.TTF_Font,
+    font_rect: sdl.SDL_Rect,
+    surface: *sdl.SDL_Surface,
+    tex: *sdl.SDL_Texture,
 
-    pub fn init(x: f32, y: f32, font_size: c_int, color: Color, msg: []const u8, renderer: *c.SDL_Renderer) !ScreenText {
-        const font_rw = c.SDL_RWFromConstMem(
+    pub fn init(x: f32, y: f32, font_size: c_int, color: Color, msg: []const u8, renderer: *sdl.SDL_Renderer) !ScreenText {
+        const font_rw = sdl.SDL_RWFromConstMem(
             @ptrCast(&FONT_FILE[0]),
             @intCast(FONT_FILE.len),
         ) orelse {
-            c.SDL_Log("Unable to get RWFromConstMem: %s", c.SDL_GetError());
+            sdl.SDL_Log("Unable to get RWFromConstMem: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
 
-        const font = c.TTF_OpenFontRW(font_rw, 0, font_size) orelse {
-            c.SDL_Log("Unable to load font: %s", c.TTF_GetError());
+        const font = sdl.TTF_OpenFontRW(font_rw, 0, font_size) orelse {
+            sdl.SDL_Log("Unable to load font: %s", sdl.TTF_GetError());
             return error.SDLInitializationFailed;
         };
-        var font_surface = c.TTF_RenderUTF8_Solid(
+        var font_surface = sdl.TTF_RenderUTF8_Solid(
             font,
             @ptrCast(msg),
             Color.make_sdl_color(color),
         ) orelse {
-            c.SDL_Log("Unable to render text: %s", c.TTF_GetError());
+            sdl.SDL_Log("Unable to render text: %s", sdl.TTF_GetError());
             return error.SDLInitializationFailed;
         };
-        var font_rect: c.SDL_Rect = .{
+        var font_rect: sdl.SDL_Rect = .{
             .w = font_surface.*.w,
             .h = font_surface.*.h,
             .x = @intFromFloat(x),
             .y = @intFromFloat(y),
         };
-        var font_tex = c.SDL_CreateTextureFromSurface(renderer, font_surface) orelse {
-            c.SDL_Log("Unable to create texture: %s", c.SDL_GetError());
+        var font_tex = sdl.SDL_CreateTextureFromSurface(renderer, font_surface) orelse {
+            sdl.SDL_Log("Unable to create texture: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
 
@@ -424,61 +424,61 @@ pub const ScreenText = struct {
     }
 
     pub fn deinit(self: *ScreenText) void {
-        defer std.debug.assert(c.SDL_RWclose(self.font_rw) == 0);
-        defer c.TTF_CloseFont(self.font);
-        defer c.SDL_FreeSurface(self.surface);
-        defer c.SDL_DestroyTexture(self.tex);
+        defer std.debug.assert(sdl.SDL_RWclose(self.font_rw) == 0);
+        defer sdl.TTF_CloseFont(self.font);
+        defer sdl.SDL_FreeSurface(self.surface);
+        defer sdl.SDL_DestroyTexture(self.tex);
     }
 
-    pub fn render(self: *ScreenText, renderer: *c.SDL_Renderer, msg: []const u8) !void {
-        self.surface = c.TTF_RenderUTF8_Solid(
+    pub fn render(self: *ScreenText, renderer: *sdl.SDL_Renderer, msg: []const u8) !void {
+        self.surface = sdl.TTF_RenderUTF8_Solid(
             self.font,
             @ptrCast(msg),
             Color.make_sdl_color(self.color),
         ) orelse {
-            c.SDL_Log("Unable to render text: %s", c.TTF_GetError());
+            sdl.SDL_Log("Unable to render text: %s", sdl.TTF_GetError());
             return error.SDLInitializationFailed;
         };
 
-        self.font_rect = c.SDL_Rect{
+        self.font_rect = sdl.SDL_Rect{
             .x = @intFromFloat(self.x),
             .y = @intFromFloat(self.y),
             .w = self.surface.*.w,
             .h = self.surface.*.h,
         };
 
-        self.tex = c.SDL_CreateTextureFromSurface(renderer, self.surface) orelse {
-            c.SDL_Log("Unable to create texture: %s", c.SDL_GetError());
+        self.tex = sdl.SDL_CreateTextureFromSurface(renderer, self.surface) orelse {
+            sdl.SDL_Log("Unable to create texture: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
 
-        _ = c.SDL_RenderCopy(renderer, self.tex, null, &self.font_rect);
+        _ = sdl.SDL_RenderCopy(renderer, self.tex, null, &self.font_rect);
     }
 };
 
 pub const Window = struct {
-    window: *c.SDL_Window,
-    renderer: *c.SDL_Renderer,
+    window: *sdl.SDL_Window,
+    renderer: *sdl.SDL_Renderer,
     width: u32,
     height: u32,
     mode: DisplayMode = DisplayMode.windowed,
 
     pub fn init(name: []const u8, xpos: u8, ypos: u8, width: u32, height: u32) !Window {
-        if (c.SDL_Init(c.SDL_INIT_VIDEO) < 0) {
-            c.SDL_Log("Unable to initialize SDL: {s}\n", c.SDL_GetError());
+        if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) < 0) {
+            sdl.SDL_Log("Unable to initialize SDL: {s}\n", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         }
 
-        if (c.TTF_Init() < 0) {
-            c.SDL_Log("Unable to initialize SDL: {s}\n", c.SDL_GetError());
+        if (sdl.TTF_Init() < 0) {
+            sdl.SDL_Log("Unable to initialize SDL: {s}\n", sdl.SDL_GetError());
         }
 
-        const window = c.SDL_CreateWindow(@ptrCast(name), @intCast(xpos), @intCast(ypos), @intCast(width), @intCast(height), 0) orelse {
-            c.SDL_Log("Unable to initialize SDL: {s}\n", c.SDL_GetError());
+        const window = sdl.SDL_CreateWindow(@ptrCast(name), @intCast(xpos), @intCast(ypos), @intCast(width), @intCast(height), 0) orelse {
+            sdl.SDL_Log("Unable to initialize SDL: {s}\n", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
-        const renderer = c.SDL_CreateRenderer(window, -1, c.SDL_RENDERER_ACCELERATED) orelse {
-            c.SDL_Log("Unable to initialize SDL: {s}\n", c.SDL_GetError());
+        const renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED) orelse {
+            sdl.SDL_Log("Unable to initialize SDL: {s}\n", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
         return Window{
@@ -490,24 +490,24 @@ pub const Window = struct {
     }
 
     pub fn deinit(self: *Window) void {
-        defer c.SDL_Quit();
-        defer c.TTF_Quit();
-        defer c.SDL_DestroyWindow(@ptrCast(self.window));
-        defer c.SDL_DestroyRenderer(self.renderer);
+        defer sdl.SDL_Quit();
+        defer sdl.TTF_Quit();
+        defer sdl.SDL_DestroyWindow(@ptrCast(self.window));
+        defer sdl.SDL_DestroyRenderer(self.renderer);
     }
 
     pub fn set_fullscreen(self: *Window, fullscreen_type: u32) void {
         switch (fullscreen_type) {
             0 => {
-                _ = c.SDL_SetWindowFullscreen(self.window, 0);
+                _ = sdl.SDL_SetWindowFullscreen(self.window, 0);
                 self.mode = DisplayMode.windowed;
             },
             1 => {
-                _ = c.SDL_SetWindowFullscreen(self.window, c.SDL_WINDOW_FULLSCREEN);
+                _ = sdl.SDL_SetWindowFullscreen(self.window, sdl.SDL_WINDOW_FULLSCREEN);
                 self.mode = DisplayMode.fullscreen;
             },
             2 => {
-                _ = c.SDL_SetWindowFullscreen(self.window, c.SDL_WINDOW_FULLSCREEN_DESKTOP);
+                _ = sdl.SDL_SetWindowFullscreen(self.window, sdl.SDL_WINDOW_FULLSCREEN_DESKTOP);
                 self.mode = DisplayMode.fullscreen_desktop;
             },
             else => {},
@@ -534,7 +534,7 @@ pub const Window = struct {
     fn window_size(self: *Window) void {
         var w: c_int = undefined;
         var h: c_int = undefined;
-        _ = c.SDL_GetWindowSize(self.window, @ptrCast(&w), @ptrCast(&h));
+        _ = sdl.SDL_GetWindowSize(self.window, @ptrCast(&w), @ptrCast(&h));
         self.width = @intCast(w);
         self.height = @intCast(h);
     }
@@ -543,12 +543,12 @@ pub const Window = struct {
     }
 };
 
-pub fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
-    _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
+pub fn set_render_color(renderer: *sdl.SDL_Renderer, col: sdl.SDL_Color) void {
+    _ = sdl.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
 
-pub fn make_sdl_rect(x: f32, y: f32, w: f32, h: f32) c.SDL_Rect {
-    return c.SDL_Rect{
+pub fn make_sdl_rect(x: f32, y: f32, w: f32, h: f32) sdl.SDL_Rect {
+    return sdl.SDL_Rect{
         .x = @intFromFloat(x),
         .y = @intFromFloat(y),
         .w = @intFromFloat(w),

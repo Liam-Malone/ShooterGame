@@ -1,7 +1,7 @@
 const std = @import("std");
 const graphics = @import("graphics.zig");
 const gui = @import("gui.zig");
-const c = @import("c.zig");
+const sdl = @import("sdl.zig");
 
 const Color = graphics.Color;
 const TextureMap = graphics.TextureMap;
@@ -22,8 +22,8 @@ const TILE_HEIGHT = 10;
 
 const THREAD_COUNT = 2;
 
-fn set_render_color(renderer: *c.SDL_Renderer, col: c.SDL_Color) void {
-    _ = c.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
+fn set_render_color(renderer: *sdl.SDL_Renderer, col: sdl.SDL_Color) void {
+    _ = sdl.SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
 }
 
 fn brush(x: u32, y: u32, r: u32, tilemap: *Tilemap) void {
@@ -99,20 +99,20 @@ pub fn main() !void {
     var writing = false;
 
     while (!quit) {
-        var event: c.SDL_Event = undefined;
-        while (c.SDL_PollEvent(&event) != 0) {
+        var event: sdl.SDL_Event = undefined;
+        while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
-                c.SDL_QUIT => {
+                sdl.SDL_QUIT => {
                     quit = true;
                 },
-                c.SDL_KEYDOWN => switch (event.key.keysym.sym) {
+                sdl.SDL_KEYDOWN => switch (event.key.keysym.sym) {
                     'q' => {
                         quit = true;
                     },
                     'w' => viewport.dy -= if (viewport.dy > -4) 2 else 0,
                     'a' => viewport.dx -= if (viewport.dx > -4) 2 else 0,
                     's' => {
-                        if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
+                        if (event.key.keysym.mod & sdl.KMOD_CTRL != 0) {
                             switch (writing) {
                                 false => {
                                     var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc, &writing });
@@ -127,7 +127,7 @@ pub fn main() !void {
                     'd' => viewport.dx += if (viewport.dx < 4) 2 else 0,
                     'e' => {
                         // need to edit to let user select output file
-                        if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
+                        if (event.key.keysym.mod & sdl.KMOD_CTRL != 0) {
                             switch (writing) {
                                 false => {
                                     var t = try std.Thread.spawn(.{}, save, .{ &tilemap, alloc, &writing });
@@ -140,7 +140,7 @@ pub fn main() !void {
                         }
                     },
                     'n' => {
-                        if (event.key.keysym.mod & c.KMOD_CTRL != 0) {
+                        if (event.key.keysym.mod & sdl.KMOD_CTRL != 0) {
                             // prompt for creating new tilemap
                             // include: map dimension options
                         } else {
@@ -157,15 +157,15 @@ pub fn main() !void {
                     },
                     else => {},
                 },
-                c.SDL_KEYUP => switch (event.key.keysym.sym) {
+                sdl.SDL_KEYUP => switch (event.key.keysym.sym) {
                     'w' => viewport.dy = if (viewport.dy < 0) 0 else viewport.dy,
                     's' => viewport.dy = if (viewport.dy > 0) 0 else viewport.dy,
                     'a' => viewport.dx = if (viewport.dx > 0) 0 else viewport.dx,
                     'd' => viewport.dx = if (viewport.dx > 0) 0 else viewport.dx,
                     else => {},
                 },
-                c.SDL_MOUSEBUTTONDOWN => switch (event.button.button) {
-                    c.SDL_BUTTON_LEFT => {
+                sdl.SDL_MOUSEBUTTONDOWN => switch (event.button.button) {
+                    sdl.SDL_BUTTON_LEFT => {
                         for (dumb_buttons) |btn| {
                             if (btn.click(@intCast(event.button.x), @intCast(event.button.y))) |id| {
                                 switch (id) {
@@ -189,14 +189,14 @@ pub fn main() !void {
                     },
                     else => {},
                 },
-                c.SDL_MOUSEBUTTONUP => switch (event.button.button) {
-                    c.SDL_BUTTON_LEFT => {
+                sdl.SDL_MOUSEBUTTONUP => switch (event.button.button) {
+                    sdl.SDL_BUTTON_LEFT => {
                         left_mouse_is_down = false;
                         clicked_button = false;
                     },
                     else => {},
                 },
-                c.SDL_MOUSEMOTION => switch (left_mouse_is_down) {
+                sdl.SDL_MOUSEMOTION => switch (left_mouse_is_down) {
                     true => {
                         const x = if (event.button.x + viewport.x > 0) @as(u32, @intCast(event.button.x + viewport.x)) else 0;
                         const y = if (event.button.y + viewport.y > 0) @as(u32, @intCast(event.button.y + viewport.y)) else 0;
@@ -208,7 +208,7 @@ pub fn main() !void {
                     },
                     false => {},
                 },
-                c.SDL_MOUSEWHEEL => {
+                sdl.SDL_MOUSEWHEEL => {
                     viewport.dy = if (event.wheel.y > 0) -20 else if (event.wheel.y < 0) 20 else 0;
                     viewport.dx = if (event.wheel.x > 0) 20 else if (event.wheel.x < 0) -20 else 0;
                 },
@@ -222,15 +222,15 @@ pub fn main() !void {
         window_width = window.width;
         window_height = window.height;
         set_render_color(window.renderer, Color.make_sdl_color(BACKGROUND_COLOR));
-        _ = c.SDL_RenderClear(window.renderer);
+        _ = sdl.SDL_RenderClear(window.renderer);
 
         tilemap.render(window.renderer, &viewport, window);
         for (dumb_buttons) |btn| {
             btn.render(window.renderer);
         }
 
-        c.SDL_RenderPresent(window.renderer);
+        sdl.SDL_RenderPresent(window.renderer);
 
-        c.SDL_Delay(1000 / FPS);
+        sdl.SDL_Delay(1000 / FPS);
     }
 }
