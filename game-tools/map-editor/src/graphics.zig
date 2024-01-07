@@ -77,41 +77,24 @@ pub const TextureMap = struct {
         }
     }
     // arena alloc_time
-    pub fn load_tex(arena_allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [:0]u8, tile_id: TileID) !?*c.SDL_Texture {
+    pub fn load_tex(arena_allocator: std.mem.Allocator, renderer: *c.SDL_Renderer, path: [0]u8, tile_id: TileID) !?*c.SDL_Texture {
         var tex: ?*c.SDL_Texture = null;
-        var default_tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "no_tex.png" });
-        var i: usize = 0;
-        const tmp_def = try arena_allocator.alloc(u8, default_tex_path.len + 1);
-        tmp_def[default_tex_path.len] = 0;
-        while (i < default_tex_path.len) {
-            tmp_def[i] = default_tex_path[i];
-            i += 1;
-        }
-        const default_path = tmp_def[0..default_tex_path.len :0];
-        std.debug.print("type of default: {any}\n", .{@TypeOf(default_path)});
+        var default_tex_path = try std.mem.concatWithSentinel(arena_allocator, u8, &[_][:0]const u8{ path, "no-tex.png" }, 0);
 
-        var tex_path: []u8 = undefined;
+        var tex_path: [:0]u8 = undefined;
         switch (tile_id) {
-            .void => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "no_tex.png" }),
-            .grass => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "grass-tex.png" }),
-            .stone => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "basic-stone.png" }),
-            .water => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "water-tex.png" }),
-            .dirt => tex_path = try std.fmt.allocPrint(arena_allocator, "{s}{s}", .{ path, "dirt-tex.png" }),
+            .void => tex_path = try std.mem.concatWithSentinel(arena_allocator, u8, &[_][:0]const u8{ path, "no-tex.png" }, 0),
+            .grass => tex_path = try std.mem.concatWithSentinel(arena_allocator, u8, &[_][:0]const u8{ path, "grass-tex.png" }, 0),
+            .stone => tex_path = try std.mem.concatWithSentinel(arena_allocator, u8, &[_][:0]const u8{ path, "basic-stone.png" }, 0),
+            .water => tex_path = try std.mem.concatWithSentinel(arena_allocator, u8, &[_][:0]const u8{ path, "water-tex.png" }, 0),
+            .dirt => tex_path = try std.mem.concatWithSentinel(arena_allocator, u8, &[_][:0]const u8{ path, "dirt-tex.png" }, 0),
             .wood, .leaves => {
                 std.debug.print("*** TODO: add texture for {any} *** \n", .{tile_id});
                 tex_path = default_tex_path;
             },
         }
-        var tmp = try arena_allocator.alloc(u8, tex_path.len + 1);
-        i = 0;
-        while (i < tex_path.len) {
-            tmp[i] = tex_path[i];
-            i += 1;
-        }
-        tmp[tex_path.len] = 0;
-        const tmp_str = tmp[0..tex_path.len :0];
 
-        tex = c.IMG_LoadTexture(renderer, @ptrCast(tmp_str)) orelse c.IMG_LoadTexture(renderer, default_path);
+        tex = c.IMG_LoadTexture(renderer, tex_path) orelse c.IMG_LoadTexture(renderer, default_tex_path);
         return tex;
     }
 };
